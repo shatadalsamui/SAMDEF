@@ -1,0 +1,57 @@
+# Rust
+/target/
+**/target/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.egg-info/
+.eggs/
+dist/
+build/
+pip-wheel-metadata/
+
+# Byte-compiled / optimized / DLL files
+*.so
+*.dll
+*.dylib
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# VSCode
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Protobuf generated files
+*.pb.cc
+*.pb.h
+*.pb.go
+*.pb.rs
+*.pb.py
+
+# Large binary files
+*.tiff
+*.geotiff
+*.weights
+
+# Logs
+*.log
+
+# Misc
+*.swp
+*.swo
