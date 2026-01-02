@@ -1,34 +1,33 @@
 
-# SAMNDEF_CORE: Tactical ISR System of Experts
+# SAMDEF_CORE: Tactical ISR System of Experts
 
 ## Overview
 
-**SAMNDEF_CORE** is an industrial-grade defense ISR (Intelligence, Surveillance, Reconnaissance) system. It uses a Decoupled Shared-Memory Architecture to process 100GB+ datasets and 10Gbps line rates. The system utilizes a "Scout & Sniper" recursive tiling strategy to detect, classify, and provide situational awareness in real-time.
+**SAMDEF_CORE** is an industrial-grade defense ISR (Intelligence, Surveillance, Reconnaissance) system. It uses a Decoupled Shared-Memory Architecture to process 100GB+ datasets and 10Gbps line rates. The system utilizes a "Scout & Sniper" recursive tiling strategy to detect, classify, and provide situational awareness in real-time.
 
 ---
 
+
 ## High-Level Architecture (The 5-App Pipeline)
 
-- **engine_rust/**: Rust Core (Performance Layer)
-      - **ingestor/**: mmap logic, tiling, Arrow buffer creation
-      - **outgestor/**: Intelligence fusion, Zstd/Arrow compression
-      - **shared/**: Internal Rust utilities
-- **brain_python/**: AI/ML Layer (Inference)
-      - **models/**: Scout (Fast) and Sniper (Deep) models
-      - **cortex/**: Kafka consumer/producer & feedback logic
-      - **utils/**: pyarrow and protobuf helpers
-- **command_ui/**: Tactical Dashboard (Iced Rust)
-      - **src/assets/**: Local tile/snippet cache
-      - **src/view/**: Tactical map & Detail cards
-      - **src/bus/**: Kafka/Arrow consumer
-- **db_processor/**: Persistence Layer (Rust)
-      - **src/**: PostGIS/SQL transaction logic
+- **apps/ingestor/**: Rust microservice for mmap logic, tiling, Arrow buffer creation
+- **apps/outgestor/**: Rust microservice for intelligence fusion, Zstd/Arrow compression
+- **apps/brain_python/**: Python microservice for AI/ML inference
+  - **models/**: Scout (Fast) and Sniper (Deep) models
+  - **cortex/**: Kafka consumer/producer & feedback logic
+  - **utils/**: pyarrow and protobuf helpers
+- **apps/command_ui/**: Tactical Dashboard (Iced Rust)
+  - **src/assets/**: Local tile/snippet cache
+  - **src/view/**: Tactical map & Detail cards
+  - **src/bus/**: Kafka/Arrow consumer
+- **apps/db_processor/**: Rust microservice for PostGIS persistence
+  - **src/**: PostGIS/SQL transaction logic
 - **protocols/**: Shared Communication (Protobuf)
-      - **detection.proto**: Metadata & Arrow Pointers
-      - **feedback.proto**: High-Res Detail Requests
+  - **detection.proto**: Metadata & Arrow Pointers
+  - **feedback.proto**: High-Res Detail Requests
 - **arrow_configs/**: Apache Arrow Schemas
-      - **scout_tile.json**: Schema for low-res grid
-      - **sniper_crop.json**: Schema for high-res vehicle crops
+  - **scout_tile.json**: Schema for low-res grid
+  - **sniper_crop.json**: Schema for high-res vehicle crops
 - **db_schemas/**: PostGIS / SQL Migrations
 - **kafka_configs/**: Broker & Topic configurations (Zstd enabled)
 - **redis_configs/**: Caching & coordination settings
