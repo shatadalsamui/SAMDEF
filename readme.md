@@ -1,85 +1,82 @@
-# SAMNDEF_CORE
+
+# SAMNDEF_CORE: Tactical ISR System of Experts
 
 ## Overview
 
-**SAMNDEF_CORE** is a hybrid defense ISR (Intelligence, Surveillance, Reconnaissance) system, leveraging a "System of Experts" architecture. It integrates a high-performance Rust engine for data ingestion and tiling, a Python-based AI orchestration layer, a modern Iced dashboard UI, and shared Protobuf protocols for seamless communication.
+**SAMNDEF_CORE** is an industrial-grade defense ISR (Intelligence, Surveillance, Reconnaissance) system. It uses a Decoupled Shared-Memory Architecture to process 100GB+ datasets and 10Gbps line rates. The system utilizes a "Scout & Sniper" recursive tiling strategy to detect, classify, and provide situational awareness in real-time.
 
 ---
 
+## High-Level Architecture (The 5-App Pipeline)
 
-## High-Level Architecture
-
-- **engine_rust/**: Ingestion & Tiling (Rust, Kafka Producer)
-- **brain_python/**: AI Orchestration & Cortex (Python, Kafka Consumer)
-- **command_ui/**: Iced Dashboard (Rust)
-- **protocols/**: Shared Protobuf Schemas
-- **plan/**: Project planning and documentation
-- **packages/**: Shared libraries and utilities
-- **db_schemas/**: Database schema files (SQL, migrations, etc.)
-- **kafka_configs/**: Kafka configuration files
-- **redis_configs/**: Redis configuration files
-- **arrow_configs/**: Apache Arrow schema/configuration files
-
-**Data Bus:** Kafka (Dockerized, single-node for development)
-
-**Spatial Memory:** PostGIS (Dockerized)
-
-**Other Infrastructure:** Redis (caching, coordination), Apache Arrow (in-memory data format)
+- **engine_rust/**: Rust Core (Performance Layer)
+      - **ingestor/**: mmap logic, tiling, Arrow buffer creation
+      - **outgestor/**: Intelligence fusion, Zstd/Arrow compression
+      - **shared/**: Internal Rust utilities
+- **brain_python/**: AI/ML Layer (Inference)
+      - **models/**: Scout (Fast) and Sniper (Deep) models
+      - **cortex/**: Kafka consumer/producer & feedback logic
+      - **utils/**: pyarrow and protobuf helpers
+- **command_ui/**: Tactical Dashboard (Iced Rust)
+      - **src/assets/**: Local tile/snippet cache
+      - **src/view/**: Tactical map & Detail cards
+      - **src/bus/**: Kafka/Arrow consumer
+- **db_processor/**: Persistence Layer (Rust)
+      - **src/**: PostGIS/SQL transaction logic
+- **protocols/**: Shared Communication (Protobuf)
+      - **detection.proto**: Metadata & Arrow Pointers
+      - **feedback.proto**: High-Res Detail Requests
+- **arrow_configs/**: Apache Arrow Schemas
+      - **scout_tile.json**: Schema for low-res grid
+      - **sniper_crop.json**: Schema for high-res vehicle crops
+- **db_schemas/**: PostGIS / SQL Migrations
+- **kafka_configs/**: Broker & Topic configurations (Zstd enabled)
+- **redis_configs/**: Caching & coordination settings
+- **docker/**: Infrastructure-as-Code
 
 ---
 
+## The "Scout & Sniper" Data Flow
+
+1. Ingestor maps 100GB file → Sends Low-Res Arrow Tiles via Kafka.
+2. Brain detects anomaly → Requests High-Res Crop from Ingestor via Feedback Topic.
+3. Ingestor fetches specific pixels → Sends High-Res Sniper Crop to Brain.
+4. Brain confirms ID (e.g., "T-90 Tank") → Sends Final Outcome to Outgestor.
+5. Outgestor bundles Sniper image + 1km Context photo → Compresses (Zstd/Arrow) → Sends to Command UI.
+6. DB Processor saves spatial metadata and image pointers to PostGIS.
+
+---
 
 ## Tech Stack
 
-- **Rust** (engine, UI)
-- **Python** (AI, inference)
-- **Kafka** (event bus)
-- **PostGIS** (spatial database)
-- **Protobuf** (wire protocol)
-- **Docker** (infrastructure)
-- **Redis** (caching, coordination)
-- **Apache Arrow** (in-memory data format)
+- **Core:** Rust (System Performance), Python (AI/ML Inference)
+- **Format:** Apache Arrow (In-memory zero-copy), Protobuf (Wire protocol)
+- **Transport:** Kafka (Asynchronous Event Bus) with Zstd compression
+- **Storage:** PostGIS (Spatial Memory), Redis (Hot-cache for UI assets)
+- **UI:** Iced (Rust-native, GPU-accelerated GUI)
 
 ---
 
-## System of Experts Philosophy
+## Architecture Diagram (Enhanced)
 
-Each subsystem is an "expert" in its domain, communicating via well-defined protocols and a robust event bus. This modular approach enables rapid iteration, clear team boundaries, and scalable intelligence fusion.
+```
+[   Ingestor (Rust)   ] <---Feedback Loop---> [    Brain (Python)    ]
+                               |                                          |
+             (Arrow/mmap)                                (Inference)
+                               |                                          |
+             [  Kafka Bus (Zstd Compressed) / Redis Hot Cache ]
+                               |                       |                  |
+[   Outgestor (Rust)  ] --> [ DB Processor ] --> [ PostGIS ]
+                               |
+[   Command UI (Iced) ] <-- (Remote Tactical Link)
+```
 
 ---
 
 ## Team Roles
 
-- **Shatadal:** Systems & UI Lead
-- **Sarnab:** AI & Inference Lead
-
----
-
-
-## Getting Started
-
-1. Clone the repository.
-2. See `plan/` for project planning and milestones.
-3. See `protocols/` for Protobuf schemas.
-4. See subsystem folders for implementation details.
-5. See `db_schemas/`, `kafka_configs/`, `redis_configs/`, and `arrow_configs/` for infrastructure and data format configurations.
-
----
-
-
-## Architecture Diagram (Description)
-
-```
-[engine_rust] <--> [Kafka Bus] <--> [synapse_python]
-      |                                   |
-[command_ui]                        [PostGIS]
-      |                                   |
- [Redis]                            [Arrow]
-```
-- Rust engine ingests and tiles data, sends via Kafka.
-- Python cortex consumes, analyzes, and stores results.
-- UI dashboard visualizes system state and intelligence.
-- Redis and Arrow provide fast data access and in-memory analytics.
+- **Shatadal:** Systems Architect & UI Lead (Ingestor, Outgestor, UI, Kafka Optimization)
+- **Sarnab:** AI & Inference Lead (Brain/Cortex Logic, Model Recursive Tiling)
 
 ---
 
