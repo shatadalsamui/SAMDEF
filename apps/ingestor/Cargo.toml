@@ -1,0 +1,13 @@
+[package]
+name = "ingestor"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+gdal = { version = "0.16", features = ["bindgen"] }
+image = "0.24"
+rayon = "1.8"
+indicatif = "0.17"
+rand = "0.8"
