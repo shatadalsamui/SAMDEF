@@ -1,6 +1,5 @@
 use serde::Deserialize;
 use std::fs;
-use std::collections::HashMap;
 
 #[derive(Debug, Deserialize)]
 pub struct GeoJson {
@@ -10,6 +9,21 @@ pub struct GeoJson {
 #[derive(Debug, Deserialize)]
 pub struct Label {
 	pub properties: Properties,
+}
+
+impl Label {
+	/// Parse bounds_imcoords "xmin,ymin,xmax,ymax" into integer coords.
+	pub fn parse_bounds(&self) -> Option<(u32, u32, u32, u32)> {
+		let parts: Vec<&str> = self.properties.bounds_imcoords.split(',').collect();
+		if parts.len() != 4 {
+			return None;
+		}
+		let xmin = parts.get(0)?.trim().parse::<f64>().ok()? as u32;
+		let ymin = parts.get(1)?.trim().parse::<f64>().ok()? as u32;
+		let xmax = parts.get(2)?.trim().parse::<f64>().ok()? as u32;
+		let ymax = parts.get(3)?.trim().parse::<f64>().ok()? as u32;
+		Some((xmin, ymin, xmax, ymax))
+	}
 }
 
 #[derive(Debug, Deserialize)]
