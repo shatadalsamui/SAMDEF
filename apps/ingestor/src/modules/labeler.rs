@@ -17,17 +17,16 @@ pub fn prepare_labels(labels: &[Label]) -> Vec<ParsedLabel> {
             let w_px = xmax.saturating_sub(xmin);
             let h_px = ymax.saturating_sub(ymin);
             let class_id = match lbl.properties.type_id {
-                73 => {
-                    if w_px > 100 || h_px > 100 {
-                        return None;
-                    }
-                    0
-                }
-                94 => 0,
-                24 => 1,
-                18 => 2,
-                21 => 3,
-                19 => 4,
+                94 => 0,  // Container / Shed → YOLO class 0
+                24 => 1,  // Pickup Truck → YOLO class 1
+                18 => 2,  // Small Car → YOLO class 2
+                21 => 3,  // Motorbike → YOLO class 3
+                19 => 4,  // Bus / Truck → YOLO class 4
+                82 => 5,  // Construction Site → YOLO class 5
+                44 => 6,  // Tent → YOLO class 6
+                45 => 7,  // Shed → YOLO class 7
+                58 => 8,  // Container / Shed → YOLO class 8
+                73 => 9,  // Huts / Small Buildings → YOLO class 9
                 _ => return None,
             };
             Some(ParsedLabel {
@@ -42,7 +41,12 @@ pub fn prepare_labels(labels: &[Label]) -> Vec<ParsedLabel> {
 }
 
 /// Given parsed labels and a tile window, produce YOLO txt content.
-pub fn labels_for_tile(parsed: &[ParsedLabel], tile_x: usize, tile_y: usize, tile_size: usize) -> String {
+pub fn labels_for_tile(
+    parsed: &[ParsedLabel],
+    tile_x: usize,
+    tile_y: usize,
+    tile_size: usize,
+) -> String {
     let t_min_x = tile_x;
     let t_max_x = tile_x + tile_size;
     let t_min_y = tile_y;
@@ -78,7 +82,10 @@ pub fn labels_for_tile(parsed: &[ParsedLabel], tile_x: usize, tile_y: usize, til
         let norm_w = (loc_xmax - loc_xmin) / tile_size as f64;
         let norm_h = (loc_ymax - loc_ymin) / tile_size as f64;
 
-        out.push_str(&format!("{} {:.6} {:.6} {:.6} {:.6}\n", p.class_id, center_x, center_y, norm_w, norm_h));
+        out.push_str(&format!(
+            "{} {:.6} {:.6} {:.6} {:.6}\n",
+            p.class_id, center_x, center_y, norm_w, norm_h
+        ));
     }
 
     out

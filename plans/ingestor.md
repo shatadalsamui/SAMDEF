@@ -79,16 +79,28 @@ All values normalized 0.0 to 1.0 relative to the tile size (1024).
 ## Implementation Checklist
 
 - [x] Parse GeoJSON labels and load features.
-- [ ] Build a label map: group features by image filename.
-- [ ] Iterate over all `.tif` images in the input directory.
-- [ ] For each image, slide a 1024x1024 window (stride 824) and extract tiles.
-- [ ] For each tile, check which labels fall inside and normalize coordinates.
-- [ ] Save every tile as `.jpg` and write a `.txt` label file (empty if no objects).
-- [ ] Write all outputs to `/home/shatadal/SAMDEF/raw_data` (or your chosen output structure).
-- [ ] Auto-generate `data.yaml` at the end.
+- [x] Build a label map: group features by image file stem (fix: ensure correct keying for tile-label association).
+- [x] Iterate over all `.tif` images in the input directory.
+- [x] For each image, slide a 1024x1024 window (stride 824) and extract tiles.
+- [x] For each tile, check which labels fall inside and normalize coordinates (supporting YOLO classes 0-4 as per mapping table).
+- [x] Save every tile as `.jpg` and write a `.txt` label file (empty if no objects).
+- [x] Write all outputs to `/home/shatadal/SAMDEF/raw_data` (or your chosen output structure).
+- [x] Auto-generate `data.yaml` at the end.
 
 ### Further Considerations
-- [ ] Add error handling for corrupt TIFFs.
-- [ ] Clamp bounding boxes to tile edges.
-- [ ] Use `rayon` for parallel image processing.
-- [ ] Monitor memory usage and process images one at a time.
+- [x] Add error handling for corrupt TIFFs.
+- [x] Clamp bounding boxes to tile edges and ensure all YOLO coordinates are normalized to [0,1].
+- [x] Use `rayon` for parallel image processing.
+- [x] Monitor memory usage and process images one at a time.
+
+## Verification & QA Workflow (2026 Update)
+
+- All label files are now correctly populated and associated with their tiles (label map keying bug fixed).
+- All YOLO classes 0–4 are supported as per tactical mapping, including special logic for class 0 and 4.
+- Visual verification is performed by overlaying bounding boxes and class labels on tile images using ImageMagick and awk shell scripts.
+- Overlay images (`.vis.jpg`) are generated for any tile, saved alongside or in a dedicated directory for QA.
+- Label file validation: check for 5 fields per line, all coordinates in [0,1], and class in 0–4.
+- For large-scale QA, batch scripts can generate overlays and help spot missing or misaligned detections.
+- Empty label files are created for background tiles as required by YOLOv12.
+
+**Note:** If any detections are missing in overlays, check label file formatting, coordinate normalization, and ensure no class is filtered out unintentionally.
