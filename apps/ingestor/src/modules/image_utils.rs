@@ -43,7 +43,7 @@ pub fn tile_image(
     // Reuse compressor to avoid per-tile setup cost
     let mut compressor = Compressor::new()?;
     compressor.set_subsamp(Subsamp::None)?;
-    compressor.set_quality(95)?; // bump quality for training fidelity
+    compressor.set_quality(85)?; // optimized quality for training fidelity
 
     // Reusable buffers to avoid per-tile allocations
     let tile_cap = (tile_size * tile_size * 3) as usize;
