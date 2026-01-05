@@ -1,0 +1,13 @@
+[project]
+name = "samdef-brain"
+version = "0.1.0"
+description = "SAMDEF Brain microservice for model inference and orchestration."
+requires-python = ">=3.9"
+dependencies = [
+    "ultralytics",
+    "confluent-kafka",
+    "numpy",
+    "opencv-python-headless",
+    "torch",
+    "shapely"
+]

@@ -22,7 +22,8 @@ pub fn find_tif_images(image_dir: &str) -> Vec<PathBuf> {
 
 pub fn tile_image(
     image_path: &Path,
-    output_dir: &str,
+    images_dir: &str,
+    labels_dir: &str,
     tile_size: u32,
     stride: u32,
     original_name: &str,
@@ -96,7 +97,7 @@ pub fn tile_image(
             // Use grid positions (y, x) so shifted edge tiles don't overwrite neighbors
             let row_idx = y / stride as usize;
             let col_idx = x / stride as usize;
-            let tile_filename = format!("{}/images/train/{}_{}_{}.jpg", output_dir, original_name, row_idx, col_idx);
+            let tile_filename = format!("{}/{}_{}_{}.jpg", images_dir, original_name, row_idx, col_idx);
 
             let image = turbojpeg::Image {
                 pixels: &tile_pixels[..pixel_idx],
@@ -111,7 +112,7 @@ pub fn tile_image(
 
             // Labels
             let label_content = labels_for_tile(&parsed_labels, tile_x, tile_y, tile_size as usize);
-            let label_filename = format!("{}/labels/train/{}_{}_{}.txt", output_dir, original_name, row_idx, col_idx);
+            let label_filename = format!("{}/{}_{}_{}.txt", labels_dir, original_name, row_idx, col_idx);
             std::fs::write(&label_filename, label_content)?;
 
             if x + stride as usize >= width {

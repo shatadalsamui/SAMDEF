@@ -14,8 +14,8 @@ pub fn prepare_labels(labels: &[Label]) -> Vec<ParsedLabel> {
         .iter()
         .filter_map(|lbl| {
             let (xmin, ymin, xmax, ymax) = lbl.parse_bounds()?;
-            let w_px = xmax.saturating_sub(xmin);
-            let h_px = ymax.saturating_sub(ymin);
+            let _w_px = xmax.saturating_sub(xmin);
+            let _h_px = ymax.saturating_sub(ymin);
             let class_id = match lbl.properties.type_id {
                 94 => 0,  // Container / Shed → YOLO class 0
                 24 => 1,  // Pickup Truck → YOLO class 1
