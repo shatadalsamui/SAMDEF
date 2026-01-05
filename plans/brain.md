@@ -59,19 +59,23 @@ cargo run --release
 ```
 
 ### Step 2.5: Create the Final Config
-- **Action:** Create a new file `/home/shatadal/SAMDEF/raw_data/processed_tiles/data.yaml` with this content:
+**Action:** Create a new file `/home/shatadal/SAMDEF/raw_data/processed_tiles/data.yaml` with this content:
 
 ```yaml
 path: /home/shatadal/SAMDEF/raw_data/processed_tiles
 train: images/train
 val: images/val
 names:
-	0: Building
-	1: Pickup
-	2: Car
+	0: Container_Shed
+	1: Pickup_Truck
+	2: Small_Car
 	3: Motorbike
-	4: Truck
+	4: Bus_Truck
 	5: Construction_Site
+	6: Tent
+	7: Shed
+	8: Container_Shed_Alt
+	9: Hut_Small_Building
 ```
 
 ---
@@ -128,6 +132,20 @@ yolo detect train \
 - **Resource Monitoring:** Use `nvidia-smi` and training logs to monitor VRAM and GPU utilization.
 - **Early Stopping:** Use `patience=15` to avoid overfitting.
 - **Validation:** After training, run inference on a few validation tiles and visually inspect predictions for small targets.
+
+---
+
+## 🚶 Phase 2: Human Detection Expansion
+
+Detecting humans in satellite imagery requires custom annotation, as xView does not provide person labels. For IDEX, use a staged approach:
+
+- **Custom Annotation:** Collect or annotate satellite images with individuals, small groups, and large gatherings. Use tools like CVAT, Labelbox, or Roboflow.
+- **New Classes:** Add new categories to `data.yaml` (e.g., `person`, `small_group`, `large_gathering`).
+- **Fine-tuning:** After initial training, fine-tune YOLOv12 on the new human-labeled data. This allows the model to learn both infrastructure and human presence.
+- **Proxy Classes:** If direct annotation is difficult, use proxy indicators (e.g., tent clusters, vehicle clusters, crowd shadows) as new classes.
+- **Validation:** Visually inspect predictions for human presence and adjust annotation strategy as needed.
+
+This staged workflow is practical for border monitoring and scalable for future mission needs.
 
 ---
 
