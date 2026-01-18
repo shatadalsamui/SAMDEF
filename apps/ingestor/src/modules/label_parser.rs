@@ -6,7 +6,7 @@ pub struct GeoJson {
 	pub features: Vec<Label>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Label {
 	pub properties: Properties,
 }
@@ -26,7 +26,7 @@ impl Label {
 	}
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Properties {
 	pub image_id: String,
 	pub type_id: u32,
