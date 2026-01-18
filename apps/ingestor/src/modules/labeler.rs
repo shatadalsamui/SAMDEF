@@ -14,21 +14,22 @@ pub fn prepare_labels(labels: &[Label]) -> Vec<ParsedLabel> {
         .iter()
         .filter_map(|lbl| {
             let (xmin, ymin, xmax, ymax) = lbl.parse_bounds()?;
-            let _w_px = xmax.saturating_sub(xmin);
-            let _h_px = ymax.saturating_sub(ymin);
+            
+            // --- THE FIXED ID MAPPING ---
             let class_id = match lbl.properties.type_id {
-                94 => 0,  // Container / Shed → YOLO class 0
-                24 => 1,  // Pickup Truck → YOLO class 1
-                18 => 2,  // Small Car → YOLO class 2
-                21 => 3,  // Motorbike → YOLO class 3
-                19 => 4,  // Bus / Truck → YOLO class 4
-                82 => 5,  // Construction Site → YOLO class 5
-                44 => 6,  // Tent → YOLO class 6
-                45 => 7,  // Shed → YOLO class 7
-                58 => 8,  // Container / Shed → YOLO class 8
-                73 => 9,  // Huts / Small Buildings → YOLO class 9
-                _ => return None,
+                89 => 0,  // Container_Shed
+                24 => 1,  // Pickup Truck
+                18 => 2,  // Small Car
+                21 => 3,  // Utility Truck
+                19 => 4,  // Bus
+                83 => 5,  // Construction Site
+                27 => 6,  // Tent
+                25 => 7,  // Shed
+                60 => 8,  // Storage Tank
+                73 => 9,  // Small Building
+                _ => return None, 
             };
+            
             Some(ParsedLabel {
                 class_id,
                 xmin,
@@ -54,7 +55,6 @@ pub fn labels_for_tile(
     let mut out = String::new();
 
     for p in parsed {
-        // Promote label coords to usize for consistent math with tile coords
         let pxmin = p.xmin as usize;
         let pxmax = p.xmax as usize;
         let pymin = p.ymin as usize;
@@ -68,6 +68,7 @@ pub fn labels_for_tile(
         let c_xmax = pxmax.max(t_min_x).min(t_max_x);
         let c_ymin = pymin.max(t_min_y).min(t_max_y);
         let c_ymax = pymax.max(t_min_y).min(t_max_y);
+
         if c_xmax <= c_xmin || c_ymax <= c_ymin {
             continue;
         }
@@ -77,6 +78,7 @@ pub fn labels_for_tile(
         let loc_ymin = (c_ymin - t_min_y) as f64;
         let loc_ymax = (c_ymax - t_min_y) as f64;
 
+        // Normalized YOLO format
         let center_x = ((loc_xmin + loc_xmax) / 2.0) / tile_size as f64;
         let center_y = ((loc_ymin + loc_ymax) / 2.0) / tile_size as f64;
         let norm_w = (loc_xmax - loc_xmin) / tile_size as f64;
@@ -87,6 +89,5 @@ pub fn labels_for_tile(
             p.class_id, center_x, center_y, norm_w, norm_h
         ));
     }
-
     out
 }

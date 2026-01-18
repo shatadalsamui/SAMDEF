@@ -36,30 +36,25 @@ pub fn tile_image(
     let band_g = dataset.rasterband(2)?;
     let band_b = dataset.rasterband(3)?;
 
-    // Pre-parse labels for this image
     let parsed_labels = prepare_labels(image_labels);
 
-    // No logs inside loops or per image
-    // Reuse compressor to avoid per-tile setup cost
     let mut compressor = Compressor::new()?;
     compressor.set_subsamp(Subsamp::None)?;
-    compressor.set_quality(85)?; // optimized quality for training fidelity
+    
+    // --- FIXED QUALITY ---
+    compressor.set_quality(95)?; 
 
-    // Reusable buffers to avoid per-tile allocations
     let tile_cap = (tile_size * tile_size * 3) as usize;
     let mut tile_pixels: Vec<u8> = vec![0u8; tile_cap];
 
     let mut y = 0;
     while y < height {
-        // Back-step target for this strip to ensure full tiles
         let tile_y = if y + tile_size as usize > height {
             height - tile_size as usize
         } else {
             y
         };
 
-        // Read a full-width strip of exactly tile_size height starting at tile_y
-        // (This covers both normal and back-stepped tiles without black padding)
         let strip_window = (0isize, tile_y as isize);
         let strip_size = (width, tile_size as usize);
         let r_strip = band_r.read_as::<u8>(strip_window, strip_size, strip_size, None)?.data;
@@ -68,7 +63,6 @@ pub fn tile_image(
 
         let mut x = 0;
         while x < width {
-            // Back-step: if tile would go off edge, shift start so it ends at the boundary
             let tile_x = if x + tile_size as usize > width {
                 width - tile_size as usize
             } else {
@@ -78,7 +72,6 @@ pub fn tile_image(
             let tile_width = tile_size as usize;
             let tile_height = tile_size as usize;
 
-            // Pack interleaved RGB from the strip buffers
             let mut pixel_idx = 0;
             for row in 0..tile_height {
                 let base = row * width + tile_x;
@@ -94,7 +87,6 @@ pub fn tile_image(
                 }
             }
 
-            // Use grid positions (y, x) so shifted edge tiles don't overwrite neighbors
             let row_idx = y / stride as usize;
             let col_idx = x / stride as usize;
             let tile_filename = format!("{}/{}_{}_{}.jpg", images_dir, original_name, row_idx, col_idx);
@@ -110,7 +102,6 @@ pub fn tile_image(
             compressor.compress(image, &mut output)?;
             std::fs::write(&tile_filename, output.as_ref())?;
 
-            // Labels
             let label_content = labels_for_tile(&parsed_labels, tile_x, tile_y, tile_size as usize);
             let label_filename = format!("{}/{}_{}_{}.txt", labels_dir, original_name, row_idx, col_idx);
             std::fs::write(&label_filename, label_content)?;
