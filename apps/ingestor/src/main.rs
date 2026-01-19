@@ -93,20 +93,16 @@ fn main() {
 
     // --- FIXED CLASS NAMES ---
     let class_names = [
-        "Container_Shed",   // 0
-        "Pickup_Truck",     // 1
-        "Small_Car",        // 2
-        "Utility_Truck",    // 3
-        "Bus",              // 4
-        "Construction_Site",// 5
-        "Tent",             // 6
-        "Shed",             // 7
-        "Storage_Tank",     // 8
-        "Small_Building"    // 9
+        "Small_Vehicle",
+        "Long_Haul",
+        "Work_Truck",
+        "Building",
+        "Temp_Structure",
+        "Construction"
     ];
     
     let mut yaml_content = format!(
-        "path: {}\ntrain: images/train\nval: images/val\nnames:\n",
+        "path: {}\ntrain: images/train\nval: images/val\nnc: 6\nnames:\n",
         base_output_dir
     );
     for (i, name) in class_names.iter().enumerate() {

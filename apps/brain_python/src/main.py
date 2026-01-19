@@ -1,8 +1,17 @@
 import sys
 import os
 import argparse
+import tqdm
+from functools import partial
+
+# --- GLOBAL SCROLLING FIX ---
+# This must run before 'import torch' or 'from cortex import trainer'
+# It forces all progress bars to update only once every 30 seconds.
+tqdm.tqdm = partial(tqdm.tqdm, mininterval=30.0)
+
 import torch
-from cortex import trainer  # Imports your new trainer module
+# Now we import your module. Ultralytics (inside trainer) will now see the patched tqdm.
+from cortex import trainer  
 
 def print_banner():
     print("="*50)
@@ -35,11 +44,9 @@ def check_environment():
 def main():
     print_banner()
     
-    # Argument Parser to handle "train" vs "run"
     parser = argparse.ArgumentParser(description="SAMDEF Brain Controller")
     parser.add_argument('mode', choices=['train', 'run'], help="Mode to run: 'train' for learning, 'run' for inference")
     
-    # If no arguments are passed, default to printing help
     if len(sys.argv) == 1:
         parser.print_help(sys.stderr)
         sys.exit(1)
@@ -61,8 +68,6 @@ def main():
 
     elif args.mode == 'run':
         print("[*] COMMAND RECEIVED: STARTING INFERENCE NODE")
-        # Placeholder for your future Kafka/Inference logic
-        # You can import a separate module here later, e.g., cortex.inference.run()
         print("    -> Logic pending implementation. (Focus on training first!)")
 
 if __name__ == "__main__":
