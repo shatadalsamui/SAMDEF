@@ -45,8 +45,8 @@ fn main() {
     println!("Output will be saved to: {}", base_output_dir);
     
     // --- FIXED CONFIG ---
-    let tile_size = 640;
-    let stride = 480; // 25% Overlap
+    let tile_size = 896;
+        let stride = 716; // 20% Overlap
 
     let image_dir = "/home/shatadal/SAMDEF_DATA/train_images/";
     let tif_files = find_tif_images(image_dir);
@@ -94,7 +94,7 @@ fn main() {
     // --- FIXED CLASS NAMES ---
     let class_names = [
         "Small_Vehicle",
-        "Long_Haul",
+        "Long_Haul_Truck",
         "Work_Truck",
         "Building",
         "Temp_Structure",

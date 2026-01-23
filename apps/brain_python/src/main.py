@@ -15,8 +15,7 @@ from cortex import trainer
 
 def print_banner():
     print("="*50)
-    print("       SAMDEF SATELLITE INTELLIGENCE SYSTEM       ")
-    print("             Brain Module v1.0                    ")
+    print("       SAMDEF SYSTEMS       ")
     print("="*50)
 
 def check_environment():
@@ -56,7 +55,7 @@ def main():
     check_environment()
 
     if args.mode == 'train':
-        print("[*] COMMAND RECEIVED: INITIATE TRAINING PROTOCOL")
+        print("[*] COMMAND RECEIVED: INITIATE TRAINING ")
         try:
             trainer.run_training()
         except KeyboardInterrupt:

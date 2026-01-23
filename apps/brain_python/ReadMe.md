@@ -27,8 +27,8 @@ python3 main.py train
 ```
 This will:
 - Run system diagnostics (GPU check, data verification).
-- Load the YOLO11s model.
-- Train for 100 epochs on your tiled xView data.
+- Load the YOLO26s model.
+- Train for 300 epochs on your tiled xView data.
 - Save results to `SAMDEF_Satellite_Ops/Run6_HighDef_100Epochs/`.
 
 ## 5. (Future) Run Inference/Inference Mode

@@ -17,7 +17,7 @@ pub fn prepare_labels(labels: &[Label]) -> Vec<ParsedLabel> {
             
             // --- THE 6-CLASS "GEOMETRIC UNITY" MAP ---
             // 0: Small_Vehicle
-            // 1: Long_Haul      (Long Rectangles: Trucks, Busses, Containers)
+            // 1: Long_Haul_Truck      (Long Rectangles: Trucks, Busses, Containers)
             // 2: Work_Truck     (Boxy/Medium: Dump, Utility)
             // 3: Building       (Fixed)
             // 4: Temp_Structure (Soft/Irregular: Tents, Sheds)

@@ -54,7 +54,7 @@ def run_training():
         cls=0.5,
         
          # --- AUGMENTATION (PROGRESSIVE MOSAIC) ---
-        mosaic=0.4,           # Epoch 0–100: full diversity
+        mosaic=0.4,           # Epoch 0–50: full diversity
         scale=0.0,
         translate=0.05,
         fliplr=0.5,

@@ -1,0 +1,16 @@
+
+YOLO26s Validation Summary (best.pt)
+Class,Images,Instances,Box(P),R,mAP50,mAP50-95
+all,1951,104904,0.476,0.377,0.357,0.187
+Small_Vehicle,885,38155,0.697,0.739,0.731,0.338
+Long_Haul_Truck,541,3965,0.488,0.386,0.355,0.197
+Work_Truck,601,3758,0.447,0.412,0.33,0.183
+Building,1032,57768,0.613,0.688,0.654,0.364
+Temp_Structure,142,567,0.329,0.0335,0.0527,0.0281
+Construction,126,691,0.285,0.00464,0.0201,0.00942
+Weights: SAMDEF_ISR/Run1_Stage1/weights/best.pt,,,,,,
+
+Recalculated Performance (Core Classes Only)
+Metric,Original (All 6 Classes),New (Core 4 Classes),
+mAP50,0.357,0.518,
+mAP50-95,0.187,0.271,

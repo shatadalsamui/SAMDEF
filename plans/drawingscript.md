@@ -1,7 +1,7 @@
 img="images/train/5_0_0.jpg"
 lbl="labels/train/5_0_0.txt"
 out="/home/shatadal/SAMDEF/raw_data/processed_tiles/examples_image_labeled/5_0_0.vis.png"
-W=640; H=640  # Changed from 1024 to 640
+W=928; H=928  # Changed from 640 to 928
 
 draw_cmd=$(awk -v W=$W -v H=$H 'NF==5 {
   c=$1; cx=$2; cy=$3; w=$4; h=$5;
