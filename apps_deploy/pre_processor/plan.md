@@ -38,11 +38,11 @@
 - [x] Remove all legacy code related to labels, training, or xml parsing (inference-only logic)
 
 ## Part 4: Continuous Loop Processing
-- [ ] Implement file watching on the input directory for new .tif files
-- [ ] Add dependency for file watching (e.g., notify crate)
-- [ ] Modify main.rs to run in a loop, processing new images as they arrive
-- [ ] Handle graceful shutdown (e.g., Ctrl+C)
-- [ ] Ensure no duplicate processing of existing files
+- [x] Implement file watching on the input directory for new .tif files
+- [x] Add dependency for file watching (notify crate)
+- [x] Modify main.rs to run in a loop, processing new images as they arrive
+- [x] Handle graceful shutdown (e.g., Ctrl+C)
+- [x] Ensure no duplicate processing of existing files
 
 ### Note on Manifest Serialization
 - Protocol Buffers (protobuf) is used for compact, fast binary serialization, with schema defined in `protos/inference_manifest.proto`.

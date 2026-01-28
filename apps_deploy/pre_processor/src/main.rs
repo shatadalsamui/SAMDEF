@@ -6,15 +6,20 @@ use rayon::ThreadPoolBuilder;
 use std::fs;
 use std::sync::{ Arc, Mutex };
 use std::time::Instant;
-use indicatif::ProgressBar;
+use std::path::PathBuf;
+use std::collections::HashSet;
+use indicatif::{ProgressBar, ProgressStyle};
 use gdal::Dataset;
 use log::error;
+use crossbeam::channel::unbounded;
+use threadpool::ThreadPool;
 mod modules;
+use modules::watcher::start_watch_loop;
 use modules::tiler::process_inference_image;
 
 fn main() {
     env_logger::init();
-    ThreadPoolBuilder::new().num_threads(16).build_global().unwrap();
+    ThreadPoolBuilder::new().num_threads(32).build_global().unwrap();
 
     let start = Instant::now();
     let input_dir = "/home/shatadal/SAMDEF_DATA/val_images";
@@ -37,6 +42,9 @@ fn main() {
         })
         .collect();
 
+    // Initialize processed set for continuous mode
+    let mut processed: HashSet<PathBuf> = HashSet::new();
+
     // Calculate total tiles across all images
     let total_tiles: u64 = image_paths
         .iter()
@@ -53,44 +61,6 @@ fn main() {
 
     // Create a single shared progress bar
     let pb = Arc::new(Mutex::new(ProgressBar::new(total_tiles)));
-
-    // Commented out: Scope/channel approach (causing hangs)
-    /*
-    // Create channel for the buffer
-    let (tx, rx): (crossbeam::channel::Sender<std::path::PathBuf>, crossbeam::channel::Receiver<std::path::PathBuf>) = channel::unbounded();
-
-    // Use rayon::scope for stable worker pool
-    rayon::scope(|s| {
-        // Spawn 16 worker tasks
-        for _ in 0..16 {
-            let rx = rx.clone();
-            let pb = Arc::clone(&pb);
-            let tiles_output_dir = tiles_output_dir.to_string();
-            let manifest_output_dir = manifest_output_dir.to_string();
-            s.spawn(move |_| {
-                while let Ok(img_path) = rx.recv() {
-                    let _ = process_inference_image(
-                        &img_path,
-                        &tiles_output_dir,
-                        &manifest_output_dir,
-                        tile_size,
-                        stride,
-                        jpeg_quality,
-                        Arc::clone(&pb),
-                    );
-                }
-            });
-        }
-
-        // Send all image paths to the channel
-        for img_path in image_paths {
-            tx.send(img_path).unwrap();
-        }
-    });
-
-    // Close the channel and finish
-    drop(tx);
-    */
 
     image_paths.par_iter().for_each(|img_path| {
         let pb_clone = Arc::clone(&pb);
@@ -111,4 +81,64 @@ fn main() {
     pb.lock().unwrap().finish_with_message("All images processed");
     let elapsed = start.elapsed();
     println!("Total processing time: {:.2}s", elapsed.as_secs_f64());
+
+    // Populate processed set with batch files to avoid re-processing
+    for path in &image_paths {
+        if let Ok(canon) = fs::canonicalize(path) {
+            processed.insert(canon);
+        }
+    }
+
+    // Now start continuous watching for new files
+    println!(" Switching to continuous mode. Monitoring for new TIFFs...");
+
+    let pool = ThreadPool::new(16);
+    let (tx, rx) = crossbeam::channel::unbounded::<PathBuf>();
+
+    // Spawn the watcher
+    std::thread::spawn(move || {
+        if let Err(e) = modules::watcher::start_watch_loop(input_dir, tx) {
+            eprintln!("❌ Watcher critical failure: {}", e);
+        }
+    });
+
+    // Continuous loop for new files
+    for path in rx {
+        let canon = match fs::canonicalize(&path) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
+        if processed.contains(&canon) {
+            continue;
+        }
+        processed.insert(canon);
+        let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
+        println!("New file detected: {:?}", file_name);
+
+        let tiles_out = tiles_output_dir.to_string();
+        let manifest_out = manifest_output_dir.to_string();
+        let tile_sz = tile_size;
+        let strd = stride;
+        let qual = jpeg_quality;
+
+        pool.execute(move || {
+            let pb = Arc::new(Mutex::new(ProgressBar::new(0)));
+            // Hide progress bar for continuous mode to avoid overlap
+            pb.lock().unwrap().set_style(ProgressStyle::default_bar().template("").unwrap());
+
+            if let Err(e) = process_inference_image(
+                &path,
+                &tiles_out,
+                &manifest_out,
+                tile_sz,
+                strd,
+                qual,
+                pb
+            ) {
+                error!("❌ Processing Failed for {:?}: {}", path, e);
+            } else {
+                println!("✅ Tiling Complete: {:?}", path.file_name().unwrap());
+            }
+        });
+    }
 }
