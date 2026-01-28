@@ -1,4 +1,4 @@
-use notify::{Watcher, RecursiveMode, Config, EventKind};
+use notify::{ Watcher, RecursiveMode, Config, EventKind };
 use std::path::PathBuf;
 use std::time::Duration;
 use crossbeam::channel::Sender;
@@ -23,12 +23,16 @@ pub fn start_watch_loop(watch_path: &str, tx: Sender<PathBuf>) -> notify::Result
                 // We trigger on Create or Modify events
                 if let EventKind::Create(_) | EventKind::Modify(_) = event.kind {
                     for path in event.paths {
-                        if path.extension().and_then(|s| s.to_str()) == Some("tif") {
-                            let _ = tx.send(path);
+                        if let Some(ext) = path.extension().and_then(|s| s.to_str()) {
+                            if ext == "tif" || ext == "tiff" {
+                                if let Err(e) = tx.send(path.clone()) {
+                                    eprintln!("Warning: Failed to send file path to main loop: {:?} (error: {})", path, e);
+                                }
+                            }
                         }
                     }
                 }
-            },
+            }
             Err(e) => eprintln!("Watcher error: {:?}", e),
         }
     }
