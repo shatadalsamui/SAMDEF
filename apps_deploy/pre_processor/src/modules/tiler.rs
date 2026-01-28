@@ -45,6 +45,14 @@ pub fn process_inference_image(
     let stem = image_path.file_stem().unwrap().to_str().unwrap();
     let mut tiles = Vec::new();
 
+    // Move compressor and output buffer outside loops for reuse
+    let mut compressor = Compressor::new()?;
+    compressor.set_subsamp(Subsamp::None)?;
+    compressor.set_quality(jpeg_quality)?;
+    let mut output = turbojpeg::OutputBuf::new_owned();
+
+    let mut local_progress = 0;
+
     let mut row_idx: u32 = 0;
     let mut y: u32 = 0;
     while y < height {
@@ -64,6 +72,7 @@ pub fn process_inference_image(
 
         let mut col_idx: u32 = 0;
         let mut x: u32 = 0;
+        let mut last_tile_x: Option<u32> = None;
         while x < width {
             let tile_x = if x + tile_size > width {
                 width - tile_size
@@ -71,6 +80,17 @@ pub fn process_inference_image(
                 x
             };
             let tile_width = tile_size.min(width - tile_x);
+
+            // Skip if this tile_x is the same as the last one (duplicate)
+            if Some(tile_x) == last_tile_x {
+                if x + stride >= width {
+                    break;
+                }
+                x += stride;
+                col_idx += 1;
+                continue;
+            }
+            last_tile_x = Some(tile_x);
 
             // Slice out the tile from the strip
             let mut tile_pixels = Vec::with_capacity((tile_width * tile_height * 3) as usize);
@@ -97,10 +117,6 @@ pub fn process_inference_image(
                 height: tile_height as usize,
                 format: PixelFormat::RGB,
             };
-            let mut compressor = Compressor::new()?;
-            compressor.set_subsamp(Subsamp::None)?;
-            compressor.set_quality(jpeg_quality)?;
-            let mut output = turbojpeg::OutputBuf::new_owned();
             compressor.compress(image, &mut output)?;
             fs::write(&out_path, output.as_ref())?;
 
@@ -114,7 +130,10 @@ pub fn process_inference_image(
                 height: tile_height,
             });
 
-            pb.lock().unwrap().inc(1);
+            local_progress += 1;
+            if local_progress % 10 == 0 {
+                pb.lock().unwrap().inc(10);
+            }
 
             if x + stride >= width {
                 break;
@@ -127,6 +146,11 @@ pub fn process_inference_image(
         }
         y += stride;
         row_idx += 1;
+    }
+
+    // Flush remaining progress
+    if local_progress % 10 != 0 {
+        pb.lock().unwrap().inc(local_progress % 10);
     }
 
     // Write manifest as protobuf

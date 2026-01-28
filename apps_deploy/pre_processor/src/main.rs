@@ -8,10 +8,12 @@ use std::sync::{ Arc, Mutex };
 use std::time::Instant;
 use indicatif::ProgressBar;
 use gdal::Dataset;
+use log::error;
 mod modules;
 use modules::tiler::process_inference_image;
 
 fn main() {
+    env_logger::init();
     ThreadPoolBuilder::new().num_threads(16).build_global().unwrap();
 
     let start = Instant::now();
@@ -92,7 +94,7 @@ fn main() {
 
     image_paths.par_iter().for_each(|img_path| {
         let pb_clone = Arc::clone(&pb);
-        let _ = process_inference_image(
+        if let Err(e) = process_inference_image(
             img_path,
             tiles_output_dir,
             manifest_output_dir,
@@ -100,7 +102,9 @@ fn main() {
             stride,
             jpeg_quality,
             pb_clone
-        );
+        ) {
+            error!("Failed to process image {}: {}", img_path.display(), e);
+        }
     });
 
     // Finish the progress bar after all processing
