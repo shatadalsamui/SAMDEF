@@ -46,7 +46,7 @@ fn main() {
     
     // --- FIXED CONFIG ---
     let tile_size = 896;
-        let stride = 716; // 20% Overlap
+    let stride = 716; // 20% Overlap
 
     let image_dir = "/home/shatadal/SAMDEF_DATA/train_images/";
     let tif_files = find_tif_images(image_dir);

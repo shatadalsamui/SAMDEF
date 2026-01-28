@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+message TileMetadata {
+    string filename = 1;
+    uint32 row_idx = 2;
+    uint32 col_idx = 3;
+    uint32 x_offset = 4;
+    uint32 y_offset = 5;
+    uint32 width = 6;
+    uint32 height = 7;
+}
+
+message InferenceManifest {
+    string source_image = 1;
+    uint32 source_width = 2;
+    uint32 source_height = 3;
+    repeated double geo_transform = 4;
+    repeated TileMetadata tiles = 5;
+}
