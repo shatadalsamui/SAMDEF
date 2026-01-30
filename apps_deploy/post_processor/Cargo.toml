@@ -11,3 +11,4 @@ imageproc = "0.26.0"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 tiff = "0.10.3"
+turbojpeg = "1.4.0"

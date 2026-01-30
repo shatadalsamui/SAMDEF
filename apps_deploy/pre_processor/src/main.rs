@@ -1,6 +1,3 @@
-pub mod inference_manifest {
-    include!(concat!(env!("OUT_DIR"), "/inference_manifest.rs"));
-}
 use rayon::prelude::*;
 use rayon::ThreadPoolBuilder;
 use std::fs;

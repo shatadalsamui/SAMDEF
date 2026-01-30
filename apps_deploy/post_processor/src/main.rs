@@ -1,12 +1,13 @@
 use anyhow::Result;
 use ab_glyph::{FontRef, PxScale};
-use image::{Rgb, RgbImage};
+use image::{Rgb};
 use imageproc::drawing::{draw_hollow_rect_mut, draw_text_mut};
 use imageproc::rect::Rect;
 use serde::Deserialize;
 use std::fs::{self, File};
 use std::io::BufReader;
 use std::path::Path;
+use turbojpeg::{Compressor, Subsamp, PixelFormat, Image, OutputBuf};
 use tiff::decoder::Decoder;
 
 // --- CONFIGURATION ---
@@ -61,8 +62,8 @@ fn process_map(json_path: &Path, font: &Option<FontRef>) -> Result<()> {
     let file = File::open(&image_path)?;
     let mut decoder = Decoder::new(&file)?;
     let (width, height) = decoder.dimensions()?;
-    let color_type = decoder.colortype()?;
-    let planar_config = decoder.get_tag(tiff::tags::Tag::PlanarConfiguration)?;
+    let _color_type = decoder.colortype()?;
+    let _planar_config = decoder.get_tag(tiff::tags::Tag::PlanarConfiguration)?;
     let chunk_count = if decoder.get_chunk_type() == tiff::decoder::ChunkType::Strip {
         decoder.strip_count()?
     } else {
@@ -88,7 +89,7 @@ fn process_map(json_path: &Path, font: &Option<FontRef>) -> Result<()> {
             rgb_data.push(data[i + size]); // G
             rgb_data.push(data[i + 2 * size]); // B
         }
-        RgbImage::from_raw(width, height, rgb_data).unwrap()
+        image::RgbImage::from_raw(width, height, rgb_data).unwrap()
     } else {
         println!("Unexpected data length: expected {}, got {}", size * 3, data.len());
         return Ok(());
@@ -99,10 +100,22 @@ fn process_map(json_path: &Path, font: &Option<FontRef>) -> Result<()> {
     let white = Rgb([255, 255, 255]);
 
     for det in detections {
-        let x = det.bbox.x_min as i32;
-        let y = det.bbox.y_min as i32;
-        let w = (det.bbox.x_max - det.bbox.x_min) as u32;
-        let h = (det.bbox.y_max - det.bbox.y_min) as u32;
+        // Round to nearest pixel and clamp to image bounds to avoid corner drift.
+        let mut x = det.bbox.x_min.round() as i32;
+        let mut y = det.bbox.y_min.round() as i32;
+        let mut w = (det.bbox.x_max - det.bbox.x_min).round() as u32;
+        let mut h = (det.bbox.y_max - det.bbox.y_min).round() as u32;
+
+        // Enforce minimum size of 1x1 and clamp box within the image.
+        if w == 0 { w = 1; }
+        if h == 0 { h = 1; }
+        let max_x = (width as i32).saturating_sub(1);
+        let max_y = (height as i32).saturating_sub(1);
+        if x < 0 { x = 0; }
+        if y < 0 { y = 0; }
+        if x as u32 + w > width { w = width.saturating_sub(x as u32).max(1); }
+        if y as u32 + h > height { h = height.saturating_sub(y as u32).max(1); }
+
         let color = if det.class_id == 1 { green } else { red };
 
         // Draw Thin Box (1px)
@@ -111,10 +124,25 @@ fn process_map(json_path: &Path, font: &Option<FontRef>) -> Result<()> {
         // Draw Label
         if let Some(f) = font {
             let label = format!("{}|{:.1}", det.class_id, det.confidence);
-            draw_text_mut(&mut image, white, x, y - 15, PxScale { x: 15.0, y: 15.0 }, &f, &label);
+            let label_y = (y - 8).max(0); // keep label on-canvas
+            draw_text_mut(&mut image, white, x, label_y, PxScale { x: 8.0, y: 8.0 }, &f, &label);
         }
     }
     let output_name = format!("{}_annotated.jpg", tiff_id);
-    image.save(format!("{}/{}", OUTPUT_DIR, output_name))?;
+
+    let mut compressor = Compressor::new()?;
+    compressor.set_quality(95)?;
+    compressor.set_subsamp(Subsamp::None)?; // 4:4:4 chroma subsampling for high-fidelity edges
+    let tj_img = Image {
+        pixels: image.as_raw().as_slice(),
+        width: width as usize,
+        height: height as usize,
+        format: PixelFormat::RGB,
+        pitch: width as usize * 3,
+    };
+
+    let mut jpeg_data = OutputBuf::new_owned();
+    compressor.compress(tj_img, &mut jpeg_data)?;
+    fs::write(format!("{}/{}", OUTPUT_DIR, output_name), &jpeg_data)?;
     Ok(())
 }

@@ -5,11 +5,9 @@ use gdal::Dataset;
 use turbojpeg::{Compressor, Subsamp, PixelFormat};
 use indicatif::ProgressBar;
 use anyhow::Result;
-use prost::Message;
 
 // Import the data structures from image_util.rs
 use crate::modules::image_util::{TileMetadata, InferenceManifest};
-use crate::inference_manifest;
 
 /// Slices a GeoTIFF into overlapping JPG tiles and generates a manifest.
 /// - image_path: path to the input .tif/.tiff file
@@ -108,7 +106,8 @@ pub fn process_inference_image(
             }
 
             // Save JPG tile
-            let filename = format!("{}_{}_{}.jpg", stem, row_idx, col_idx);
+            // Encode true offsets in the filename to keep detector math exact.
+            let filename = format!("{}_{}_{}_x{}_y{}.jpg", stem, row_idx, col_idx, tile_x, tile_y);
             let out_path = Path::new(tiles_output_dir).join(&filename);
             let image = turbojpeg::Image {
                 pixels: &tile_pixels[..],
@@ -162,30 +161,6 @@ pub fn process_inference_image(
         tiles,
     };
 
-    // Convert to protobuf types
-    let pb_tiles: Vec<inference_manifest::TileMetadata> = manifest.tiles.iter().map(|t| {
-        inference_manifest::TileMetadata {
-            filename: t.filename.clone(),
-            row_idx: t.row_idx as u32,
-            col_idx: t.col_idx as u32,
-            x_offset: t.x_offset,
-            y_offset: t.y_offset,
-            width: t.width,
-            height: t.height,
-        }
-    }).collect();
-
-    let pb_manifest = inference_manifest::InferenceManifest {
-        source_image: manifest.source_image.clone(),
-        source_width: manifest.source_width,
-        source_height: manifest.source_height,
-        geo_transform: manifest.geo_transform.to_vec(),
-        tiles: pb_tiles,
-    };
-
-    let mut buf = Vec::new();
-    pb_manifest.encode(&mut buf).map_err(|e| anyhow::anyhow!(e))?;
-    let manifest_path = Path::new(manifest_output_dir).join(format!("{}_manifest.pb", stem));
-    fs::write(manifest_path, buf)?;
+    // PB generation removed; manifest is returned for in-memory use if needed.
     Ok(manifest)
 }
