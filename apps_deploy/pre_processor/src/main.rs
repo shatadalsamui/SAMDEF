@@ -19,7 +19,7 @@ use modules::tiler::process_inference_image;
 
 fn main() {
     env_logger::init();
-    ThreadPoolBuilder::new().num_threads(32).build_global().unwrap();
+    ThreadPoolBuilder::new().num_threads(16).build_global().unwrap();
 
     let start = Instant::now();
     let input_dir = "/home/shatadal/SAMDEF_DATA/val_images";
