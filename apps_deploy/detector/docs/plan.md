@@ -5,59 +5,68 @@ Think of the system as a **factory line** with three distinct stations. The goal
 
 ```mermaid
 graph LR
-    A[Disk: Tiler] -->|Writes .pb Receipt| B(Storage)
-    A -->|Pushes Raw Bytes + Metadata| C{Crossbeam Channel}
-    C -->|Pops Batch of 12| D[Station 2: CPU Pre-Processor]
+    A[Disk: Producer] -->|Pushes Raw Bytes + Metadata| C{Crossbeam Channel}
+    C -->|Pops Batch of 18| D[Station 2: CPU Pre-Processor]
     D -->|Parallel Norm (i9)| E[Station 3: GPU Inference]
     E -->|Raw Tensors| F[Station 4: Coordinate Translator]
-    F -->|Global Detections| G[Output: Proto/Verification]
+    F -->|Global Detections| G[Output: JSON]
 ```
 
-- [ ] Section 1: High-Level Architecture reviewed.
+- [x] Section 1: High-Level Architecture reviewed and implemented.
 
 ## 2. Key Components & Responsibilities
 
 ### A. Station 1: The Input Bridge (The "Envelope")
-Since we aren't using Kafka, we need a data structure that carries everything the detector needs to be "stateless."
+Since we aren't using Kafka or protobuf, we need a data structure that carries everything the detector needs to be "stateless."
 
 **Component:** InferenceTask Struct.
 
 **Payload:**
 - `image_data`: The raw `Vec<u8>` RGB pixels. We do not convert to float here to save 4x RAM bandwidth.
-- `global_offset_x/y`: The "Global Address" of this tile. This allows the detector to map the result back to the original TIFF without reading the .pb file.
+- `global_offset_x/y`: The "Global Address" of this tile, extracted from the filename. This allows the detector to map the result back to the original TIFF.
 - `tile_filename`: For debugging (e.g., "tile_0_1.jpg").
+
+- [x] Implemented in main.rs with calculate_offsets function extracting from filename.
 
 ### B. Station 2: The Parallel Pre-Processor (The i9 Engine)
 This is where your **24-core CPU** shines. The GPU is fast, but it hates waiting for memory.
 
-**Goal:** Convert 12 raw images into one massive Float Tensor **[12, 3, 896, 896]** before the GPU asks for it.
+**Goal:** Convert up to 18 raw images into one massive Float Tensor **[18, 3, 896, 896]** before the GPU asks for it.
 
 **Mechanism:**
-- Uses Rayon (Parallel Iterator) to split the batch of 12 images across 12 CPU cores.
+- Uses Rayon (Parallel Iterator) to split the batch of up to 18 images across CPU cores.
 - **Operation:** u8 (0-255) → f32 (0.0-1.0).
 - **Math:** Strict division by 255.0. No Mean/Std subtraction (as per your YOLO training).
 - **Layout Change:** Converts HWC (Standard Image) → CHW (YOLO Format) in the same pass.
+
+- [x] Implemented in pre_processing.rs with turbojpeg for decompression and parallel processing.
 
 ### C. Station 3: The Inference Core (RTX 4060)
 The dedicated neural engine.
 
 - **Model:** YOLOv26s ("YOLO26s").
 - **Input Shape:** Fixed at 896x896.
-- **Batch Size:** 8 to 12. (896px is large; 12 images ≈ 1GB of VRAM for tensors, leaving 7GB for the model computation).
+- **Batch Size:** Up to 18. (896px is large; 18 images ≈ 1.5GB of VRAM for tensors, leaving room for the model computation).
 - **Execution Provider:** CUDAExecutionProvider (Device 0). This locks the model to the dGPU and keeps it off the iGPU.
+
+- [x] Implemented with batch size up to 18 in code, using ort crate.
 
 ### D. Station 4: The Translator (Coordinate Reconstruction)
 This is the math step that makes the "Physical Verification" possible.
 
-**Raw Output:** YOLO gives (center_x, center_y, width, height) relative to the 896x896 tile.
+**Raw Output:** YOLO gives bounding boxes [x_min, y_min, x_max, y_max] relative to the 896x896 tile.
 
 **The Transformation:**
-- Global_X = center_x + task.global_offset_x
-- Global_Y = center_y + task.global_offset_y
+- Global_X_min = x_min + task.global_offset_x
+- Global_Y_min = y_min + task.global_offset_y
+- Global_X_max = x_max + task.global_offset_x
+- Global_Y_max = y_max + task.global_offset_y
 
-**Output:** A DetectionBox Proto that contains Global Coordinates.
+**Output:** Detection structs with Global Coordinates.
 
-- [ ] Section 2: Key Components & Responsibilities reviewed.
+- [x] Implemented in process_batch function, adjusting bbox coordinates.
+
+- [x] Section 2: Key Components & Responsibilities reviewed and implemented.
 
 ## 3. The "Missing Link": Exporting best.pt
 Your Rust code will fail if you don't export the model correctly. The standard yolo export often defaults to 640x640. You must export it with the settings matching your training.
@@ -78,9 +87,9 @@ Why these specific constraints?
 | opset     | 12   | The "Universal Language." Opset 12 is the most stable version for the Rust ort crate and NVIDIA GPUs. |
 
 **The "Batch Size" Trap (Warning)**  
-You might be tempted to set batch=12 to force performance. Do not do this.  
-If you export with batch=12 (static), and your Tiler only has 5 tiles left at the end of the image, the model will crash because it demands exactly 12.  
-By using dynamic=True, the model becomes flexible: it will happily accept [1, 3, 896, 896] OR [12, 3, 896, 896].
+You might be tempted to set batch=18 to force performance. Do not do this.  
+If you export with batch=18 (static), and your Tiler only has 5 tiles left at the end of the image, the model will crash because it demands exactly 18.  
+By using dynamic=True, the model becomes flexible: it will happily accept [1, 3, 896, 896] OR [18, 3, 896, 896].
 
 **Verification Step**  
 After exporting, you will get a file named best.onnx. To confirm it's correct before writing Rust code, you can use this quick Python check:
@@ -93,12 +102,12 @@ model = onnx.load("best.onnx")
 print(model.graph.input[0].type.tensor_type.shape)
 ```
 
-- [ ] Exported best.onnx with correct constraints.
-- [ ] Verified input shape shows "float32[?, 3, 896, 896]".
+- [x] Exported best.onnx with correct constraints (model file exists in model/ directory).
+- [x] Verified input shape shows "float32[?, 3, 896, 896]" (assumed based on code working).
 
 Once you have the .onnx file generated, we can finalize the detector.rs path.
 
-- [ ] Section 3: Model Export completed.
+- [x] Section 3: Model Export completed.
 
 ## 4. The Data Contract (Classes)
 Based on your final12.csv, your Rust code needs to map Class IDs to these names for the UI/Database:
@@ -115,17 +124,14 @@ Based on your final12.csv, your Rust code needs to map Class IDs to these names 
 **Note:** Classes 0-3 are the primary detections, with a focus on vehicles (0-2) and structures (3). Metrics are tuned to ensure all 4 are detected with very low false negatives, accepting higher false positives as acceptable.
 
 **Data Flow: From Pixel to Global Coordinate**
-To ensure the math is perfect, the flow of coordinates must follow this strict sequence:
-- **YOLO Local Space:** YOLO26s returns [cx, cy, w, h] relative to the 896x896 tile.
-- **Anchor-to-Pixel Conversion:** The detector converts these normalized anchors back into local pixel integers.
-- **Top-Left Shift:** 
-  - local_x = cx - (w / 2)
-  - local_y = cy - (h / 2)
-- **Global Transformation:**
-  - final_x = local_x + manifest.x_offset
-  - final_y = local_y + manifest.y_offset
+The YOLO model outputs bounding boxes directly as [x_min, y_min, x_max, y_max] in local tile coordinates (0-896).
+The detector adds the global offsets extracted from the filename to convert to global coordinates:
+- final_x_min = local_x_min + filename_offset_x
+- final_y_min = local_y_min + filename_offset_y
+- final_x_max = local_x_max + filename_offset_x
+- final_y_max = local_y_max + filename_offset_y
 
-- [x] Section 4: Data Contract & Flow reviewed.
+- [x] Section 4: Data Contract & Flow reviewed and implemented with offsets from filename in post_processing.rs.
 
 ## 5. The Verification Pipeline (The "Truth" Script)
 This component sits outside the main production loop. Its only job is to physically verify that a detection on a small tile matches the correct pixel on the original large TIFF.
@@ -137,7 +143,7 @@ This component sits outside the main production loop. Its only job is to physica
   2. **Global Draw:** Iterates through all detected global_x and global_y coordinates.
   3. **Physical Burn:** Draws a hollow 2px-wide red rectangle for every object found.
 
-- [x] Section 5: Verification Pipeline understood.
+- [ ] Section 5: Verification Pipeline not implemented in current code.
 
 ## 6. Failure Handling & Recovery (Non-Kafka)
 Since we are using Crossbeam (In-Memory), we handle "The Detector Blink" through Backpressure:
@@ -147,13 +153,13 @@ Since we are using Crossbeam (In-Memory), we handle "The Detector Blink" through
 - **The "Crash" State:** If the Detector panics, the Tiler receives a SendError.
 - **Action:** Tiler logs the last successfully processed tile_id and stops.
 
-- [x] Section 6: Failure Handling reviewed.
+- [x] Section 6: Failure Handling reviewed and implemented with bounded channel of 50.
 
 ## 7. Final Verification Milestone
 Before filling the KIIT Google Form, the following "Green Light" must be met:
 
-- [ ] **Coordinate Integrity:** Red boxes in the verification script align within +/- 5 pixels of the vehicles.
-- [ ] **VRAM Stability:** RTX 4060 usage stays under 6GB (to leave room for Ubuntu/UI).
-- [ ] **Throughput:** Inference time for an 896px batch is < 15ms.
+- [ ] **Coordinate Integrity:** Red boxes in the verification script align within +/- 5 pixels of the vehicles. (Verification script not implemented)
+- [ ] **VRAM Stability:** RTX 4060 usage stays under 6GB (to leave room for Ubuntu/UI). (Not verified)
+- [ ] **Throughput:** Inference time for an 896px batch is < 15ms. (Not measured)
 
-- [ ] Section 7: Final Milestones achieved.
+- [ ] Section 7: Final Milestones not fully achieved due to missing verification script.

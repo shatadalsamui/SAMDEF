@@ -131,7 +131,7 @@ fn process_map(json_path: &Path, font: &Option<FontRef>) -> Result<()> {
     let output_name = format!("{}_annotated.jpg", tiff_id);
 
     let mut compressor = Compressor::new()?;
-    compressor.set_quality(95)?;
+    compressor.set_quality(100)?;
     compressor.set_subsamp(Subsamp::None)?; // 4:4:4 chroma subsampling for high-fidelity edges
     let tj_img = Image {
         pixels: image.as_raw().as_slice(),
