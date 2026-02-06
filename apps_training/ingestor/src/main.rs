@@ -93,17 +93,19 @@ fn main() {
 
     // FIXED CLASS NAMES ---
     let class_names = [
-        "Small_Vehicle",
-        "Long_Haul_Truck",
-        "Work_Truck",
-        "Building",
-        "Temp_Structure",
-        "Construction"
+        "long truck",      // Class 0
+        "boxy truck",     // Class 1
+        "small vehicle",  // Class 2
+        "building",       // Class 3
+        "container",      // Class 4
+        "construction vehicle", // Class 5
+        "tank",           // Class 6
+        "container lot"   // Class 7
     ];
-    
     let mut yaml_content = format!(
-        "path: {}\ntrain: images/train\nval: images/val\nnc: 6\nnames:\n",
-        base_output_dir
+        "path: {}\ntrain: images/train\nval: images/val\nnc: {}\nnames:\n",
+        base_output_dir,
+        class_names.len()
     );
     for (i, name) in class_names.iter().enumerate() {
         yaml_content.push_str(&format!("  {}: {}\n", i, name));

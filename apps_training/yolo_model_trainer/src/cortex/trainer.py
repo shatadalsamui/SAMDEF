@@ -4,19 +4,19 @@ import torch
 from ultralytics import YOLO
 
 def run_training():
-    # --- 1. HARDWARE LOCK ---
+    #HARDWARE
     if not torch.cuda.is_available():
-        sys.exit("Error gpu is not avaailable!")
+        sys.exit("Error gpu is not available!")
     
     device = 0
     gpu_name = torch.cuda.get_device_name(0)
     print(f"HARDWARE : {gpu_name}")
 
-    # --- 2. CONFIGURATION ---
-    model_name = '/home/shatadal/SAMDEF/apps/brain_python/src/SAMDEF_ISR/Run2/weights/last.pt'
-    data_yaml = '/home/shatadal/SAMDEF/raw_data/processed_tiles/data_phase1.yaml'
+    #CONFIGURATION
+    model_name = '/home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/models/yolo26s.pt'
+    data_yaml = '/home/shatadal/SAMDEF/raw_data/processed_tiles/data.yaml'
     project_name = 'SAMDEF_ISR'
-    run_name = 'Run2'  
+    run_name = 'Run3'  
 
     # Verify weights exist before starting to avoid crashing later
     if not os.path.exists(model_name):
@@ -24,13 +24,13 @@ def run_training():
 
     model = YOLO(model_name)
 
-    # --- 3. ENGAGE TRAINING ---
+   
     print(f"Starting: {run_name}")
 
     results = model.train(
         data=data_yaml,
         
-        # CORE TRAINING 
+       
         epochs=200, 
         imgsz=896,
         batch=4,
@@ -38,22 +38,22 @@ def run_training():
         amp=True,
         cache=False,
         
-        # OPTIMIZER & LR 
+        
         optimizer='MuSGD',
-        lr0=0.01,            # Stable start (not too fast, not too slow)
-        lrf=0.1,
+        lr0=0.01,            
+        lrf=0.01,
         momentum=0.937,
         weight_decay=0.0005,
         cos_lr=True,
         warmup_epochs=5,
-        #warmup_momentum=0.6,
+       
         
-        # LOSS (GEOMETRY-FOCUSED, STABLE) 
+        
         box=7.5,
         cls=0.5,
         
-        # AUGMENTATION (PROGRESSIVE MOSAIC) 
-        mosaic=0.4,           # Epoch 0–100: full diversity
+        
+        mosaic=0.5,          
         scale=0.0,
         translate=0.05,
         fliplr=0.5,
@@ -61,23 +61,23 @@ def run_training():
         degrees=0.0,
         shear=0.0,
         perspective=0.0,
-        close_mosaic=60,
+        close_mosaic=40,
 
-        # SYSTEM 
-        workers=8,            # Lower than 12 to avoid CPU jitter
+        
+        workers=8,            
         plots=False,
         save=True,
         save_period=10,
         seed=0,
         deterministic=True,
 
-        # LOGGING & EXECUTION 
+       
         project=project_name,
         name=run_name,
         exist_ok=True,
         verbose=True,
         device=device,
-        resume=True          # Must be False to apply new schedule
+        resume=False          # Must be False to apply new schedule
     )
 
     print("-" * 50)

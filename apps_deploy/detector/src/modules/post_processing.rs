@@ -61,7 +61,7 @@ pub fn non_maximum_suppression(detections: &mut Vec<Detection>, iou_threshold: f
 }
 
 /// Parses the Raw Output from the ONNX Model
-/// Format: [Batch, 300, 6] -> [x_min, y_min, x_max, y_max, confidence, class_id]
+/// Format: [Batch, 1000, 6] -> [x_min, y_min, x_max, y_max, confidence, class_id]
 pub fn parse_output(output: ArrayView2<f32>, tile_filename: &str) -> Vec<Detection> {
     let mut detections = Vec::new();
     const IMG_SIZE: f32 = 896.0;

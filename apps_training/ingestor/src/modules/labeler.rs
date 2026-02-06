@@ -8,50 +8,51 @@ pub struct ParsedLabel {
     pub ymax: u32,
 }
 
-/// Parse and filter labels for one image: applies class map and hut size filter.
+// Parse and filter labels for one image: applies class map and hut size filter.
 pub fn prepare_labels(labels: &[Label]) -> Vec<ParsedLabel> {
     labels
         .iter()
         .filter_map(|lbl| {
             let (xmin, ymin, xmax, ymax) = lbl.parse_bounds()?;
-            
-            // --- THE 6-CLASS "GEOMETRIC UNITY" MAP ---
-            // 0: Small_Vehicle
-            // 1: Long_Haul_Truck      (Long Rectangles: Trucks, Busses, Containers)
-            // 2: Work_Truck     (Boxy/Medium: Dump, Utility)
-            // 3: Building       (Fixed)
-            // 4: Temp_Structure (Soft/Irregular: Tents, Sheds)
-            // 5: Construction   (Land Use)
 
             let class_id = match lbl.properties.type_id {
-                // --- 0: SMALL VEHICLES ---
-                17 => 0,  // Passenger Vehicle
-                18 => 0,  // Small Car
-                20 => 0,  // Pickup Truck
-                
-                // --- 1: LONG HAUL (Merged Containers Here) ---
-                19 => 1,  // Bus
-                27 => 1,  // Trailer (Cargo on wheels)
-                24 => 1,  // Cargo Truck
-                91 => 1,  // Shipping Container (The metal box itself)
-                
-                // --- 2: WORK TRUCKS (Boxy/Short) ---
-                60 => 2,  // Dump Truck
-                21 => 2,  // Utility Truck
-                23 => 2,  // Truck (Generic)
-                25 => 2,  // Truck w/ Box
-                
-                // --- 3: BUILDINGS ---
-                73 => 3,  // Building
-                
-                // --- 4: TEMP STRUCTURES ---
-                71 => 4,  // Hut/Tent
-                72 => 4,  // Shed
-                45 => 4,  // Tent (Backup)
-                
-                // --- 5: CONSTRUCTION ---
-                79 => 5,  // Construction Site
-                
+                // truck
+                19 => 0, // Bus
+                24 => 0, // Cargo Truck
+                26 => 0, // Truck Tractor
+                27 => 0, // Trailer
+                28 => 0, // Flatbed
+
+                // boxy
+                21 => 1, // Utility Truck
+                23 => 1, // Truck
+                25 => 1, // Box Truck
+                29 => 1, // Liquid Truck
+
+                // car
+                17 => 2, // Passenger Car
+                18 => 2, // Small Car
+                20 => 2, // Pickup
+
+                // building
+                73 => 3, // Building
+
+                // container
+                91 => 4, // Container
+
+                // construction
+                60 => 5, // Dump Truck
+                61 => 5, // Haul Truck
+                63 => 5, // Loader
+                64 => 5, // Excavator
+                65 => 5, // Mixer
+
+                // tank
+                86 => 6, // Tank
+
+                // lot
+                89 => 7, // Container Lot
+
                 _ => return None, 
             };
             

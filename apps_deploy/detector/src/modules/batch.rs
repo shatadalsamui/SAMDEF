@@ -25,7 +25,7 @@ pub fn process_batch(
     for (i, single_output_dyn) in outputs.outer_iter().enumerate() {
         let task = &batch[i];
         if let Ok(single_output_2d) = single_output_dyn.into_dimensionality::<ndarray::Ix2>() {
-            // No Transpose: The model output is already [300, 6]
+            // No Transpose: The model output is already [1000, 6]
             let output_view = single_output_2d;
 
             let mut detections =

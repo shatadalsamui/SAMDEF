@@ -88,7 +88,7 @@ def main():
       # TODO: Add Kafka Consumer logic here
       time.sleep(1) 
   except KeyboardInterrupt:
-    print("\n🛑 SAMDEF BRAIN: Shutting down.")
+    print("\n SAMDEF BRAIN: Shutting down.")
 
 if __name__ == "__main__":
   main()

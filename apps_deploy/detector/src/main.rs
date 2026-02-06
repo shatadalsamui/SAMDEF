@@ -24,7 +24,7 @@ fn main() -> Result<()> {
     let output_dir = "/home/shatadal/SAMDEF/raw_data/inference/results";
     
     // IMPORTANT: Make sure this file exists!
-    let model_path = "/home/shatadal/SAMDEF/apps_deploy/detector/model/best.onnx";
+    let model_path = "/home/shatadal/SAMDEF/apps_deploy/detector/model/best_1000.onnx";
 
     fs::create_dir_all(output_dir)?;
 
@@ -48,12 +48,12 @@ fn main() -> Result<()> {
         // Verify GPU usage with `watch -n 1 nvidia-smi` in another terminal.
         println!("Model Session Created (Check nvidia-smi for GPU usage)");
 
-        let mut batch = Vec::with_capacity(18);
+        let mut batch = Vec::with_capacity(32);
         let mut global_results: HashMap<String, Vec<Detection>> = HashMap::new();
 
         for task in rx {
             batch.push(task);
-            if batch.len() >= 18 {
+            if batch.len() >= 32 {
                 process_batch(&mut session, &mut batch, &mut global_results)?;
             }
         }
