@@ -52,10 +52,6 @@ pub fn prepare_labels(labels: &[Label]) -> Vec<ParsedLabel> {
                 // --- 5: CONSTRUCTION ---
                 79 => 5,  // Construction Site
                 
-                // --- DELETED / IGNORED ---
-                // 61 (Haul Truck - Too big/rare).
-                // 89 (Container Lot - Zone, not object).
-                // 26, 28, 29, 11 -> GONE.
                 _ => return None, 
             };
             

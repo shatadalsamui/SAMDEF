@@ -44,7 +44,7 @@ fn main() {
 
     println!("Output will be saved to: {}", base_output_dir);
     
-    // --- FIXED CONFIG ---
+    // FIXED CONFIG 
     let tile_size = 896;
     let stride = 716; // 20% Overlap
 
@@ -91,7 +91,7 @@ fn main() {
 
     println!("Total tiling completed in {:.2?}", start.elapsed());
 
-    // --- FIXED CLASS NAMES ---
+    // FIXED CLASS NAMES ---
     let class_names = [
         "Small_Vehicle",
         "Long_Haul_Truck",

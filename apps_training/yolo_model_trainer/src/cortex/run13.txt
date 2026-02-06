@@ -1,0 +1,137 @@
+use crate::modules::label_parser::Label;
+
+pub struct ParsedLabel {
+    pub class_id: u32,
+    pub xmin: u32,
+    pub ymin: u32,
+    pub xmax: u32,
+    pub ymax: u32,
+}
+
+/// Parse and filter labels for one image: applies the new 7-class schema.
+pub fn prepare_labels(labels: &[Label]) -> Vec<ParsedLabel> {
+    labels
+        .iter()
+        .filter_map(|lbl| {
+            let (xmin, ymin, xmax, ymax) = lbl.parse_bounds()?;
+            
+            // --- THE 7-CLASS "STRATEGIC GEOINT" MAP ---
+            // 0: Long_Haul_Truck  (Articulated, Semis, Heavy Cargo)
+            // 1: Boxy_Truck       (Rigid, Utility, Dump, Mixers, Cranes)
+            // 2: Light_Vehicle    (Cars, Small Cars, Pickups ONLY)
+            // 3: Building         (General Buildings, Hangars, Sheds)
+            // 4: Container        (Shipping Containers)
+            // 5: Geo_Square       (Helipads, Paved Areas)
+            // 6: Geo_Circle       (Tanks, Towers)
+
+            let class_id = match lbl.properties.type_id {
+                // --- 0: LONG HAUL TRUCK ---
+                26 => 0,  // Truck Tractor (Semi front)
+                27 => 0,  // Trailer (Semi back)
+                24 => 0,  // Cargo Truck (Heavy)
+                19 => 0,  // Bus (Large, linear feature)
+                
+                // --- 1: BOXY TRUCK ---
+                23 => 1,  // Truck (Generic)
+                25 => 1,  // Truck w/Box
+                21 => 1,  // Utility Truck (Moved here from Light Vehicle)
+                28 => 1,  // Truck w/Flatbed
+                29 => 1,  // Truck w/Liquid (Mixer)
+                32 => 1,  // Crane Truck
+                60 => 1,  // Dump Truck
+                
+                // --- 2: LIGHT VEHICLE ---
+                17 => 2,  // Passenger Vehicle (Car)
+                18 => 2,  // Small Car
+                20 => 2,  // Pickup Truck (Standard)
+                
+                // --- 3: BUILDING ---
+                73 => 3,  // Building
+                71 => 3,  // Hut/Tent (Grouped into Building)
+                72 => 3,  // Shed (Grouped into Building)
+                74 => 3,  // Aircraft Hangar
+                
+                // --- 4: CONTAINER ---
+                50 => 4,  // Shipping Container
+                91 => 4,  // Shipping Container Lot (Often blocks of containers)
+                
+                // --- 5: GEO_SQUARE (Strategic Geometry) ---
+                15 => 5,  // Helipad
+                84 => 5,  // Helipad (Alternate ID)
+                77 => 5,  // Facility/Paved Area (Square clearings)
+                
+                // --- 6: GEO_CIRCLE (Strategic Geometry) ---
+                86 => 6,  // Storage Tank
+                89 => 6,  // Storage Tank (Alternate/Oil Tank)
+                93 => 6,  // Tower
+                
+                // --- EXCLUDED / NOISE ---
+                // 79 (Construction Site), 61 (Haul Truck), 
+                // 11 (Fixed Wing - detect separately?), 94 (Eng. Vehicle)
+                _ => return None, 
+            };
+            
+            Some(ParsedLabel {
+                class_id,
+                xmin,
+                ymin,
+                xmax,
+                ymax,
+            })
+        })
+        .collect()
+}
+
+/// Given parsed labels and a tile window, produce YOLO txt content.
+pub fn labels_for_tile(
+    parsed: &[ParsedLabel],
+    tile_x: usize,
+    tile_y: usize,
+    tile_size: usize,
+) -> String {
+    let t_min_x = tile_x;
+    let t_max_x = tile_x + tile_size;
+    let t_min_y = tile_y;
+    let t_max_y = tile_y + tile_size;
+    let mut out = String::new();
+
+    for p in parsed {
+        let pxmin = p.xmin as usize;
+        let pxmax = p.xmax as usize;
+        let pymin = p.ymin as usize;
+        let pymax = p.ymax as usize;
+
+        // Check if label intersects with the tile
+        if pxmax <= t_min_x || pxmin >= t_max_x || pymax <= t_min_y || pymin >= t_max_y {
+            continue;
+        }
+
+        // Clip to tile boundaries
+        let c_xmin = pxmin.max(t_min_x).min(t_max_x);
+        let c_xmax = pxmax.max(t_min_x).min(t_max_x);
+        let c_ymin = pymin.max(t_min_y).min(t_max_y);
+        let c_ymax = pymax.max(t_min_y).min(t_max_y);
+
+        if c_xmax <= c_xmin || c_ymax <= c_ymin {
+            continue;
+        }
+
+        // Convert to local tile coordinates
+        let loc_xmin = (c_xmin - t_min_x) as f64;
+        let loc_xmax = (c_xmax - t_min_x) as f64;
+        let loc_ymin = (c_ymin - t_min_y) as f64;
+        let loc_ymax = (c_ymax - t_min_y) as f64;
+
+        // Normalized YOLO format (center_x, center_y, width, height)
+        let center_x = ((loc_xmin + loc_xmax) / 2.0) / tile_size as f64;
+        let center_y = ((loc_ymin + loc_ymax) / 2.0) / tile_size as f64;
+        let norm_w = (loc_xmax - loc_xmin) / tile_size as f64;
+        let norm_h = (loc_ymax - loc_ymin) / tile_size as f64;
+
+        out.push_str(&format!(
+            "{} {:.6} {:.6} {:.6} {:.6}\n",
+            p.class_id, center_x, center_y, norm_w, norm_h
+        ));
+    }
+    out
+}

@@ -6,11 +6,11 @@ from ultralytics import YOLO
 def run_training():
     # --- 1. HARDWARE LOCK ---
     if not torch.cuda.is_available():
-        sys.exit("❌ CRITICAL ERROR: NVIDIA GPU not detected. Training aborted.")
+        sys.exit("Error gpu is not avaailable!")
     
     device = 0
     gpu_name = torch.cuda.get_device_name(0)
-    print(f"✅ HARDWARE : {gpu_name}")
+    print(f"HARDWARE : {gpu_name}")
 
     # --- 2. CONFIGURATION ---
     model_name = '/home/shatadal/SAMDEF/apps/brain_python/src/SAMDEF_ISR/Run2/weights/last.pt'
@@ -20,18 +20,17 @@ def run_training():
 
     # Verify weights exist before starting to avoid crashing later
     if not os.path.exists(model_name):
-        sys.exit(f"❌ ERROR: Checkpoint not found at {model_name}. Please verify path.")
+        sys.exit(f" ERROR: Checkpoint not found at {model_name}. verify path.")
 
     model = YOLO(model_name)
 
     # --- 3. ENGAGE TRAINING ---
-    print(f"INITIALIZING : {run_name}")
-    print("   Strategy: RUN 2")
+    print(f"Starting: {run_name}")
 
     results = model.train(
         data=data_yaml,
         
-        # --- CORE TRAINING ---
+        # CORE TRAINING 
         epochs=200, 
         imgsz=896,
         batch=4,
@@ -39,9 +38,9 @@ def run_training():
         amp=True,
         cache=False,
         
-        # --- OPTIMIZER & LR (STABLE, NOT AGGRESSIVE) ---
+        # OPTIMIZER & LR 
         optimizer='MuSGD',
-        lr0=0.01,            # 🔒 Stable start (not too fast, not too slow)
+        lr0=0.01,            # Stable start (not too fast, not too slow)
         lrf=0.1,
         momentum=0.937,
         weight_decay=0.0005,
@@ -49,11 +48,11 @@ def run_training():
         warmup_epochs=5,
         #warmup_momentum=0.6,
         
-        # --- LOSS (GEOMETRY-FOCUSED, STABLE) ---
+        # LOSS (GEOMETRY-FOCUSED, STABLE) 
         box=7.5,
         cls=0.5,
         
-         # --- AUGMENTATION (PROGRESSIVE MOSAIC) ---
+        # AUGMENTATION (PROGRESSIVE MOSAIC) 
         mosaic=0.4,           # Epoch 0–100: full diversity
         scale=0.0,
         translate=0.05,
@@ -64,7 +63,7 @@ def run_training():
         perspective=0.0,
         close_mosaic=60,
 
-          # --- SYSTEM ---
+        # SYSTEM 
         workers=8,            # Lower than 12 to avoid CPU jitter
         plots=False,
         save=True,
@@ -72,13 +71,13 @@ def run_training():
         seed=0,
         deterministic=True,
 
-        # --- LOGGING & EXECUTION ---
+        # LOGGING & EXECUTION 
         project=project_name,
         name=run_name,
         exist_ok=True,
         verbose=True,
         device=device,
-        resume=True          # 🔒 Must be False to apply new schedule
+        resume=True          # Must be False to apply new schedule
     )
 
     print("-" * 50)
