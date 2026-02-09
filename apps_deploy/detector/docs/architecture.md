@@ -2,42 +2,44 @@
 
 ## Overview
 
-The SAMDEF Detector is a high-performance Rust application designed for real-time object detection on large-scale geospatial imagery. It processes tiled JPEG images using a YOLOv26s ONNX model deployed on CUDA-enabled GPUs, producing detection results in JSON format with global coordinates for the orginal .tif/.tiff file.
+The SAMDEF Detector is a high-performance Rust application designed for real-time object detection on large-scale geospatial imagery. It processes GeoTIFF files using virtual tiling, runs inference on a YOLOv26s ONNX model deployed on CUDA-enabled GPUs, and produces detection results in JSON format with global coordinates.
 
 ### High-Level Flow of the SAMDEF Detector
 
-The SAMDEF Detector processes tiled JPEG images from geospatial data using a producer-consumer architecture for efficient, GPU-accelerated object detection. Here's the simplified flow:
+The SAMDEF Detector processes GeoTIFF images using a producer-consumer architecture for efficient, GPU-accelerated object detection:
 
 1. **Input Reading (Producer Thread)**:
-   - Scans a directory for JPEG tiles (896x896 pixels each).
-   - Extracts global offsets from filenames (e.g., `x<offx>_y<offy>` for absolute positioning).
-   - Creates tasks and sends them via a bounded channel (capacity: 50) to buffer and prevent memory overflow.
+   - Scans directory for GeoTIFF files (.tif/.tiff).
+   - Uses virtual tiling to generate 896x896 RGB tiles with 716px stride and shift-back strategy for edge handling.
+   - Creates tasks with global offsets and geo-transform data.
+   - Sends tasks via bounded channel (capacity: 64) to prevent memory overflow.
 
 2. **Batch Processing (Consumer Thread)**:
-   - Collects up to 18 tasks into a batch.
-   - Preprocesses images in parallel: JPEG → RGB pixels → normalized CHW tensors (using Rayon for CPU parallelism).
-   - Runs inference on the batch using a YOLOv26s ONNX model via CUDA (output: detections with bounding boxes, confidence, and class IDs).
+   - Collects up to 32 tasks into a batch.
+   - Preprocesses tiles: RGB pixels → normalized CHW tensors (parallel CPU processing).
+   - Runs inference on batch using YOLOv26s ONNX model via CUDA.
 
 3. **Postprocessing and Output**:
-   - Applies confidence thresholds and NMS (IoU 0.45) to filter detections.
+   - Applies confidence thresholds and NMS (IoU 0.45).
    - Converts local tile coordinates to global coordinates using offsets.
-   - Aggregates detections by TIFF ID, applies global NMS, and serializes to JSON files (e.g., `{tiff_id}_manifest.json`).
+   - Aggregates detections by source TIFF, applies global NMS, serializes to JSON.
 
 **Key Characteristics**:
+- Virtual tiling eliminates need for pre-tiled JPEGs.
 - Parallel preprocessing across CPU cores.
 - GPU batching for efficiency.
-- Handles large-scale imagery with backpressure via the channel.
-- Outputs detections in global coordinates for mapping back to source data.
+- Handles large GeoTIFFs with backpressure via channel.
+- Outputs detections in global coordinates with geo-transform metadata.
 
 ## High-Level Architecture
 
-The system follows a producer-consumer pattern with parallel preprocessing and GPU-accelerated inference:
+Producer-consumer pattern with virtual tiling and GPU-accelerated inference:
 
 ```
 [Producer Thread] --> [Crossbeam Channel] --> [Consumer Thread]
        |                       |                       |
-   Read Tiles              Buffer Tasks            Batch Process
-   Extract Offsets         Capacity: 50            GPU Inference
+   Virtual Tile            Buffer Tasks            Batch Process
+   GeoTIFFs                Capacity: 64            GPU Inference
    Send Tasks              Bounded Channel         Post-process
                                                        |
                                                [JSON Output]
@@ -47,123 +49,100 @@ The system follows a producer-consumer pattern with parallel preprocessing and G
 
 ### 1. Producer Thread (Main Thread)
 
-**Location:** `main.rs` - Producer Loop
+**Location:** `modules/io/producer.rs`
 
 **Responsibilities:**
-- Scans input directory for JPEG files
-- Extracts global offsets from filenames using `calculate_offsets()`
-- Creates `InferenceTask` structs
-- Sends tasks to bounded channel (capacity 50)
-- Handles graceful shutdown on consumer failure
+- Scans input directory for GeoTIFF files.
+- Calls `virtual_tiler::process_geotiff()` for each file.
+- Sends `InferenceTask` structs to channel.
 
-**Filename Parsing:**
-- Expected format: `<stem>_<row>_<col>_x<offx>_y<offy>.jpg`
-- Extracts offsets directly from `x<offx>_y<offy>` tokens
-- Falls back to stride-based calculation if offsets missing
-- Supports configurable row/column swapping (`SWAP_RC`)
+### 2. Virtual Tiler
 
-### 2. Consumer Thread (Inference Engine)
-
-**Location:** `main.rs` - Spawned Thread
+**Location:** `modules/io/virtual_tiler.rs`
 
 **Responsibilities:**
-- Maintains ONNX session with CUDA execution provider
-- Batches incoming tasks (up to 18 images)
-- Orchestrates preprocessing, inference, and postprocessing
-- Aggregates detections by TIFF ID
-- Applies global NMS across all detections per TIFF
-- Serializes results to JSON files
+- Opens GeoTIFF with GDAL, reads RGB bands.
+- Generates overlapping tiles (896x896, stride 716).
+- Uses shift-back for edge tiles to maintain size.
+- Creates interleaved RGB data for each tile.
+- Builds tasks with offsets and geo-transform.
 
-### 3. Preprocessing Module
+### 3. Consumer Thread (Inference Engine)
 
-**Location:** `modules/pre_processing.rs`
+**Location:** `modules/io/consumer.rs`
 
-**Functions:**
-- `preprocess_image()`: Single image processing
-- `preprocess_batch()`: Parallel batch processing
+**Responsibilities:**
+- Maintains ONNX session with CUDA provider.
+- Batches tasks (up to 32 images).
+- Calls `process_batch()` for inference.
+- Aggregates results by source path.
+- Returns detections grouped by TIFF.
+
+### 4. Preprocessing Module
+
+**Location:** `modules/processing/pre_processing.rs`
 
 **Operations:**
-1. JPEG decompression using `turbojpeg` (RGB format)
-2. Validation: Assert 896x896 dimensions
-3. HWC (Height, Width, Channels) → CHW (Channels, Height, Width) transposition with normalization   - Channels: RGB color channels (3 total: Red, Green, Blue)4. Parallel processing across CPU cores using Rayon
+- Converts RGB bytes to normalized float tensors.
+- Transposes HWC → CHW.
+- Parallel processing with Rayon.
 
 **Output:** Flattened float32 tensor `[batch, 3, 896, 896]`
 
-### 4. Inference Module
+### 5. Inference Module
 
-**Location:** `modules/inference.rs`
-
-**Function:** `run_inference()`
+**Location:** `modules/processing/inference.rs`
 
 **Operations:**
-1. Convert ndarray to `ort::Value`
-2. Execute ONNX session with CUDA provider
-3. Extract output tensor (shape: `[batch, 300, 6]`)
-4. Return as `ArrayD<f32>`
+- Executes ONNX session on batch tensor.
+- Returns output tensor `[batch, 300, 6]`.
 
-**Model Details:**
-- Input: `[batch, 3, 896, 896]` float32
-- Output: `[batch, 300, 6]` - [x_min, y_min, x_max, y_max, confidence, class_id]
-- Dynamic batch size (1-18) supported
+### 6. Postprocessing Module
 
-### 5. Postprocessing Module
-
-**Location:** `modules/post_processing.rs`
-
-**Functions:**
-- `parse_output()`: Parse raw model output
-- `non_maximum_suppression()`: Remove overlapping detections
+**Location:** `modules/processing/post_processing.rs`
 
 **Operations:**
-1. **Thresholding:** Apply class-specific confidence thresholds
-2. **Coordinate Handling:**
-   - Detect normalized vs pixel coordinates
-   - Scale normalized coords to 896px
-   - Clamp to tile bounds [0, 895]
-   - Ensure minimum 1px extent
-3. **NMS:** IoU threshold 0.45, per-class suppression
+- Parses model output to detections.
+- Applies thresholds and NMS (IoU 0.45).
+- Converts to global coordinates.
 
 ## Data Structures
 
 ### InferenceTask
-- image_data: Raw JPEG bytes
-- global_offset_x: X offset for global coords
-- global_offset_y: Y offset for global coords
-- tile_filename: Source filename
+- image_data: RGB bytes (interleaved)
+- source_path: GeoTIFF file path
+- global_offset_x/y: Pixel offsets in source
+- geo_transform: GDAL geo-transform array
 
 ### Detection
-- bbox: BoundingBox
-- class_id: 0-5 (Small_Vehicle, Building, etc.)
+- bbox: BoundingBox (global coords)
+- class_id: 0-7 (vehicle/building types)
 - confidence: 0.0-1.0
-- source_tile: Original tile filename
-
-### BoundingBox
-- x_min, y_min, x_max, y_max
 
 ## Configuration Constants
 
-- **TILE_STRIDE:** 716.0 (pixels between tile origins, accounting for overlap)
-- **SWAP_RC:** false (filename ordering: row_col vs col_row)
-- **BATCH_SIZE:** Up to 18 images
-- **CHANNEL_CAPACITY:** 50 tasks
+- **TILE_SIZE:** 896
+- **STRIDE:** 716
+- **BATCH_SIZE:** 32
+- **CHANNEL_CAPACITY:** 64
 - **NMS_IOU_THRESHOLD:** 0.45
-- **CLASS_THRESHOLDS:** [0.05, 0.05, 0.05, 0.05, 0.25, 0.25] for classes 0-5
+- **CLASS_THRESHOLDS:** Varies by class
 
 ## Data Flow
 
 ### 1. Input Processing
 ```
-JPEG File → calculate_offsets() → InferenceTask → Channel
+GeoTIFF → GDAL Read → Virtual Tiles → InferenceTask → Channel
 ```
 
 ### 2. Batch Formation
 ```
-Channel → Collect up to 18 tasks → preprocess_batch()
+Channel → Collect up to 32 tasks → preprocess_batch()
 ```
 
 ### 3. Preprocessing
 ```
-JPEG Bytes → RGB Pixels → HWC Float → CHW Tensor → Batch Tensor
+RGB Bytes → Float Tensor → CHW → Batch Tensor
 ```
 
 ### 4. Inference
@@ -173,12 +152,12 @@ Batch Tensor → ONNX Session → Raw Outputs [batch, 300, 6]
 
 ### 5. Postprocessing
 ```
-Raw Outputs → Threshold → Scale/Clamp → Detections → Global Offset Addition
+Raw Outputs → Threshold → Global Offset → Detections
 ```
 
 ### 6. Aggregation
 ```
-Detections → Group by TIFF ID → Global NMS → JSON Serialization
+Detections → Group by TIFF → Global NMS → JSON Serialization
 ```
 
 ## Coordinate System
@@ -186,55 +165,34 @@ Detections → Group by TIFF ID → Global NMS → JSON Serialization
 ### Local Coordinates
 - Relative to 896x896 tile
 - Origin: top-left (0,0)
-- Range: [0, 895] for pixel coordinates
 
 ### Global Coordinates
-- Absolute position in source TIFF
-- Calculated: `local_coord + global_offset`
-- Enables mapping detections back to original imagery
-
-### Offset Extraction
-- Primary: Direct from filename `x<offx>_y<offy>`
-- Fallback: `col * TILE_STRIDE, row * TILE_STRIDE`
+- Absolute pixel position in source GeoTIFF
+- Calculated: `local + offset`
 
 ## Output Format
 
 ### JSON Structure
-Array of detection objects with bbox, class_id, confidence, source_tile
+- source_image: Path to GeoTIFF
+- geo_transform: GDAL transform array
+- source_width/height: Image dimensions
+- detections: Array of detection objects
 
 ### File Naming
-- `{tiff_id}_manifest.json`
-- `tiff_id` extracted from tile filename prefix
-
-## Performance Characteristics
-
-- **GPU Utilization:** CUDA execution provider locks to dGPU
-- **CPU Parallelism:** Rayon-based preprocessing across cores
-- **Memory Efficiency:** Bounded channel prevents unbounded memory growth
-- **Batch Processing:** Amortizes GPU kernel launch overhead
-- **Backpressure:** Channel capacity limits producer speed to consumer capacity
-
-## Error Handling
-
-- **Producer:** Stops on channel send failure (consumer crashed)
-- **Consumer:** Panics propagate to main thread via `handle.join()`
-- **Preprocessing:** Validates image dimensions, returns `Result`
-- **Inference:** ORT errors bubble up as `anyhow::Error`
+- `{tiff_stem}_results.json`
 
 ## Dependencies
 
-- **ort:** ONNX Runtime Rust bindings (CUDA support)
-- **ndarray:** Tensor operations
-- **turbojpeg:** Fast JPEG decompression
+- **ort:** ONNX Runtime (CUDA)
+- **gdal:** GeoTIFF reading
+- **ndarray:** Tensor ops
 - **rayon:** Parallel processing
-- **crossbeam:** Multi-producer single-consumer channel
+- **crossbeam:** Channel
 - **serde:** JSON serialization
 
 ## Build and Deployment
 
 - **Compilation:** `cargo build --release`
-- **CUDA Dependency:** Requires CUDA runtime and ONNX Runtime GPU libraries
-- **Model Path:** Hardcoded absolute path to `best.onnx`
-- **Directory Structure:** Expects specific input/output paths
-
-This architecture enables efficient processing of large geospatial datasets with minimal latency and high throughput through GPU acceleration and parallel preprocessing.
+- **CUDA Dependency:** Requires CUDA runtime
+- **Model Path:** Hardcoded to `best.onnx`
+- **Input:** Directory with GeoTIFF files
