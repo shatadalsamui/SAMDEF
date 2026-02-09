@@ -1,3 +1,12 @@
+// Class ID to name mapping (fixed color per class):
+// 0: long truck         (Neon Pink)
+// 1: boxy truck         (Neon Green)
+// 2: small vehicle      (Neon Cyan)
+// 3: building           (Neon Yellow)
+// 4: container          (Neon Magenta)
+// 5: construction vehicle (Neon Aqua)
+// 6: tank               (Neon Orange)
+// 7: container lot      (Neon Blue-Green)
 use anyhow::Result;
 use ab_glyph::{FontRef, PxScale};
 use image::{Rgb};
@@ -9,6 +18,18 @@ use std::io::BufReader;
 use std::path::Path;
 use turbojpeg::{Compressor, Subsamp, PixelFormat, Image, OutputBuf};
 use tiff::decoder::Decoder;
+
+// Neon color palette for 8 classes
+const NEON_COLORS: [Rgb<u8>; 8] = [
+    Rgb([255, 0, 128]),   // Neon Pink
+    Rgb([57, 255, 20]),   // Neon Green
+    Rgb([0, 255, 255]),   // Neon Cyan
+    Rgb([255, 255, 0]),   // Neon Yellow
+    Rgb([255, 0, 255]),   // Neon Magenta
+    Rgb([0, 255, 128]),   // Neon Aqua
+    Rgb([255, 110, 0]),   // Neon Orange
+    Rgb([0, 255, 200]),   // Neon Blue-Green
+];
 
 // --- CONFIGURATION ---
 const TIFF_DIR: &str = "/home/shatadal/SAMDEF_DATA/val_images";
@@ -95,8 +116,6 @@ fn process_map(json_path: &Path, font: &Option<FontRef>) -> Result<()> {
         return Ok(());
     };
 
-    let red = Rgb([255, 50, 50]);
-    let green = Rgb([50, 255, 50]);
     let white = Rgb([255, 255, 255]);
 
     for det in detections {
@@ -109,24 +128,39 @@ fn process_map(json_path: &Path, font: &Option<FontRef>) -> Result<()> {
         // Enforce minimum size of 1x1 and clamp box within the image.
         if w == 0 { w = 1; }
         if h == 0 { h = 1; }
-        let max_x = (width as i32).saturating_sub(1);
-        let max_y = (height as i32).saturating_sub(1);
         if x < 0 { x = 0; }
         if y < 0 { y = 0; }
         if x as u32 + w > width { w = width.saturating_sub(x as u32).max(1); }
         if y as u32 + h > height { h = height.saturating_sub(y as u32).max(1); }
 
-        let color = if det.class_id == 1 { green } else { red };
+        // Use fixed neon color for each class (see mapping above)
+        let color = NEON_COLORS[det.class_id % NEON_COLORS.len()];
 
         // Draw Thin Box (1px)
         draw_hollow_rect_mut(&mut image, Rect::at(x, y).of_size(w, h), color);
 
-        // Draw Label
-        if let Some(f) = font {
-            let label = format!("{}|{:.1}", det.class_id, det.confidence);
-            let label_y = (y - 8).max(0); // keep label on-canvas
-            draw_text_mut(&mut image, white, x, label_y, PxScale { x: 8.0, y: 8.0 }, &f, &label);
-        }
+        // // --- LABEL DRAWING BLOCK: comment out this block to hide class/conf labels ---
+        // if let Some(f) = font {
+        //     let label = format!("{}|{:.1}", det.class_id, det.confidence);
+        //     let font_size = 10.0;
+        //     let scale = PxScale { x: font_size, y: font_size };
+        //     let label_width = (label.len() as f32 * font_size * 0.6).ceil() as u32;
+        //     let label_height = (font_size * 1.2).ceil() as u32;
+        //     let mut label_y = y - label_height as i32 - 2;
+        //     if label_y < 0 { label_y = y + h as i32 + 2; }
+        //     let mut label_x = x;
+        //     if label_x < 0 { label_x = 0; }
+        //     if (label_x as u32 + label_width) > width { label_x = width.saturating_sub(label_width) as i32; }
+        //     let bg_rect = Rect::at(label_x, label_y).of_size(label_width, label_height);
+        //     let bg_color = Rgb([
+        //         color[0].saturating_add(60).min(255),
+        //         color[1].saturating_add(60).min(255),
+        //         color[2].saturating_add(60).min(255),
+        //     ]);
+        //     imageproc::drawing::draw_filled_rect_mut(&mut image, bg_rect, bg_color);
+        //     draw_text_mut(&mut image, Rgb([0, 0, 0]), label_x, label_y, scale, &f, &label);
+        // }
+        // // --- END LABEL DRAWING BLOCK ---
     }
     let output_name = format!("{}_annotated.jpg", tiff_id);
 
