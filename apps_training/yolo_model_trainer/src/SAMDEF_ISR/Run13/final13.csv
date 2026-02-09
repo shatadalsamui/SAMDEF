@@ -1,0 +1,12 @@
+YOLO26s Validation Summary (best.pt)
+Class,Images,Instances,Box(P),R,mAP50,mAP50-95
+all,1906,109732,0.502,0.428,0.416,0.216
+long truck,555,3633,0.437,0.393,0.387,0.193
+boxy truck,671,4648,0.438,0.344,0.341,0.187
+small vehicle,921,43962,0.635,0.803,0.746,0.306
+building,1025,55930,0.552,0.729,0.681,0.366
+container,32,112,0.472,0.179,0.168,0.11
+construction vehicle,202,717,0.558,0.453,0.489,0.283
+tank,52,145,0.492,0.338,0.286,0.157
+container lot,85,585,0.435,0.183,0.23,0.124
+Weights: /home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run13/weights/best.pt,,,,,,

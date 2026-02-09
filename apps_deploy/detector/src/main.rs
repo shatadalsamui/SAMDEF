@@ -24,7 +24,7 @@ fn main() -> Result<()> {
     let output_dir = "/home/shatadal/SAMDEF/raw_data/inference/results";
     
     // IMPORTANT: Make sure this file exists!
-    let model_path = "/home/shatadal/SAMDEF/apps_deploy/detector/model/best_1000.onnx";
+    let model_path = "/home/shatadal/SAMDEF/apps_deploy/detector/model/best.onnx";
 
     fs::create_dir_all(output_dir)?;
 

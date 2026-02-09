@@ -31,7 +31,13 @@ This will:
 - Train for 300 epochs on your tiled xView data.
 - Save results to `SAMDEF_Satellite_Ops/Run6_HighDef_100Epochs/`.
 
-## 5. (Future) Run Inference/Inference Mode
+## 5. Export PyTorch Model to ONNX
+After training, export your best model to ONNX format for ONNX Runtime:
+```bash
+yolo export model=/home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run14/weights/best.pt format=onnx half=True opset=17 simplify=True nms=True max_det=2000 dynamic=True
+```
+
+## 6. (Future) Run Inference/Inference Mode
 ```bash
 source venv/bin/activate
 cd src

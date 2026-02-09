@@ -16,7 +16,7 @@ def run_training():
     model_name = '/home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/models/yolo26s.pt'
     data_yaml = '/home/shatadal/SAMDEF/raw_data/processed_tiles/data.yaml'
     project_name = '/home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/SAMDEF_ISR'
-    run_name = 'Run14'  
+    run_name = 'Run13'  
 
     # Verify weights exist before starting to avoid crashing later
     if not os.path.exists(model_name):
@@ -29,13 +29,14 @@ def run_training():
     results = model.train(
         data=data_yaml,
         
-        epochs=100, 
+       
+        epochs=200, 
         imgsz=896,
         batch=4,
         nbs=64,
         amp=True,
         cache=False,
-        max_det=2000,
+        max_det=1500,
         
         optimizer='MuSGD',
         lr0=0.01,            
@@ -59,7 +60,7 @@ def run_training():
         shear=0.0,
         perspective=0.0,
         copy_paste=0.15,
-        close_mosaic=30,
+        close_mosaic=40,
         
         
         workers=8,            

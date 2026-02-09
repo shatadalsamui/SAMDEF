@@ -30,7 +30,7 @@ def check_environment():
         print("    ! WARNING: No GPU detected. Training will be extremely slow.")
 
     # 2. Check Data
-    data_path = '/home/shatadal/SAMDEF/raw_data/processed_tiles/data_phase1.yaml'
+    data_path = '/home/shatadal/SAMDEF/raw_data/processed_tiles/data.yaml'
     if os.path.exists(data_path):
         print("    ✓ Data Configuration Found")
     else:

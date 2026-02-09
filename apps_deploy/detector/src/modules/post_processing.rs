@@ -40,17 +40,23 @@ fn calculate_iou(box_a: &BoundingBox, box_b: &BoundingBox) -> f32 {
 
 /// Standard Non-Maximum Suppression
 pub fn non_maximum_suppression(detections: &mut Vec<Detection>, iou_threshold: f32) {
-    if detections.is_empty() { return; }
-    
+    if detections.is_empty() {
+        return;
+    }
+
     // Sort by confidence (High -> Low)
-    detections.sort_unstable_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap_or(Ordering::Equal));
+    detections.sort_unstable_by(|a, b|
+        b.confidence.partial_cmp(&a.confidence).unwrap_or(Ordering::Equal)
+    );
 
     let mut i = 0;
     while i < detections.len() {
         let mut j = i + 1;
         while j < detections.len() {
-            if detections[i].class_id == detections[j].class_id && 
-               calculate_iou(&detections[i].bbox, &detections[j].bbox) > iou_threshold {
+            if
+                detections[i].class_id == detections[j].class_id &&
+                calculate_iou(&detections[i].bbox, &detections[j].bbox) > iou_threshold
+            {
                 detections.remove(j);
             } else {
                 j += 1;
@@ -66,9 +72,9 @@ pub fn parse_output(output: ArrayView2<f32>, tile_filename: &str) -> Vec<Detecti
     let mut detections = Vec::new();
     const IMG_SIZE: f32 = 896.0;
     const MAX_COORD: f32 = IMG_SIZE - 1.0;
-    
+
     // CONFIDENCE THRESHOLDS (0.0 to 1.0)
-    const CLASS_THRESHOLDS: [f32; 6] = [0.05, 0.05, 0.05, 0.05, 0.25, 0.25];
+    const CLASS_THRESHOLDS: [f32; 8] = [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05];
 
     for proposal in output.rows() {
         // Raw values: [v0, v1, v2, v3, confidence, class_id]
@@ -84,12 +90,7 @@ pub fn parse_output(output: ArrayView2<f32>, tile_filename: &str) -> Vec<Detecti
             // Use a small epsilon (1.01) to handle floating point overflow at edges
             let (mut x_min, mut y_min, mut x_max, mut y_max) = if v2 <= 1.01 {
                 // Model outputs normalized coords (0-1). Scale to tile pixels; clamp to avoid edge spill.
-                (
-                    v0 * MAX_COORD,
-                    v1 * MAX_COORD,
-                    v2 * MAX_COORD,
-                    v3 * MAX_COORD,
-                )
+                (v0 * MAX_COORD, v1 * MAX_COORD, v2 * MAX_COORD, v3 * MAX_COORD)
             } else {
                 (v0, v1, v2, v3)
             };
@@ -99,8 +100,12 @@ pub fn parse_output(output: ArrayView2<f32>, tile_filename: &str) -> Vec<Detecti
             y_min = y_min.clamp(0.0, MAX_COORD);
             x_max = x_max.clamp(0.0, MAX_COORD);
             y_max = y_max.clamp(0.0, MAX_COORD);
-            if x_max <= x_min { x_max = (x_min + 1.0).min(MAX_COORD); }
-            if y_max <= y_min { y_max = (y_min + 1.0).min(MAX_COORD); }
+            if x_max <= x_min {
+                x_max = (x_min + 1.0).min(MAX_COORD);
+            }
+            if y_max <= y_min {
+                y_max = (y_min + 1.0).min(MAX_COORD);
+            }
 
             detections.push(Detection {
                 bbox: BoundingBox { x_min, y_min, x_max, y_max },
