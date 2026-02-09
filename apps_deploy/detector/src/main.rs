@@ -1,105 +1,41 @@
 use anyhow::Result;
 use crossbeam::channel;
-use ndarray::Array;
-use ort::{ep::CUDAExecutionProvider, session::Session}; 
-use std::collections::HashMap;
-use std::fs::{self, File};
-use std::io::BufWriter;
+use std::fs;
+use std::path::PathBuf;
 use std::thread;
+
 mod modules;
-use modules::post_processing::Detection;
-use modules::task::InferenceTask;
-use modules::utils::calculate_offsets;
-use modules::batch::process_batch;
+use modules::data::task::InferenceTask;
+use modules::io::consumer::run_consumer;
+use modules::io::producer::run_producer;
+use modules::data::results::process_and_save_results;
+
+const BATCH_SIZE: usize = 32;
 
 fn main() -> Result<()> {
-    // 1. Initialize ORT Global State
-    // FIX 1: Removed `?` because in this version commit() returns bool
-    let _ = ort::init()
-        .with_name("SAMDEF_Detector")
-        .commit();
+    env_logger::init();
+    let _ = ort::init().with_name("SAMDEF_Detector").commit();
 
-    // 2. CONFIGURATION (ABSOLUTE PATHS)
-    let input_dir = "/home/shatadal/SAMDEF/raw_data/inference/inference_tiles";
-    let output_dir = "/home/shatadal/SAMDEF/raw_data/inference/results";
-    
-    // IMPORTANT: Make sure this file exists!
-    let model_path = "/home/shatadal/SAMDEF/apps_deploy/detector/model/best.onnx";
+    let input_dir = PathBuf::from("/home/shatadal/SAMDEF_DATA/val_images");
+    let output_dir = PathBuf::from("/home/shatadal/SAMDEF/raw_data/inference/results");
+    let model_path = PathBuf::from("/home/shatadal/SAMDEF/apps_deploy/detector/model/best.onnx");
 
-    fs::create_dir_all(output_dir)?;
+    fs::create_dir_all(&output_dir)?;
 
-    println!(" SAMDEF Detector Starting...");
-    println!(" Input: {}", input_dir);
-    println!(" Model: {}", model_path);
+    println!("SAMDEF Detector Starting...");
+    println!("Input: {:?}", input_dir);
+    println!("Model: {:?}", model_path);
 
-    // 3. Create Pipeline
-    let (tx, rx) = channel::bounded::<InferenceTask>(50);
+    let (task_tx, task_rx) = channel::bounded::<InferenceTask>(BATCH_SIZE * 2);
 
-    // 4. Spawn Engine Thread
-    let model_path_clone = model_path.to_string(); // Clone string for the thread
+    let consumer_handle = thread::spawn(move || run_consumer(task_rx, model_path));
+    let producer_handle = thread::spawn(move || run_producer(input_dir, task_tx));
 
-    let handle = thread::spawn(move || -> Result<()> {
-        // Create Session
-        let mut session = Session::builder()?
-            .with_execution_providers([CUDAExecutionProvider::default().with_device_id(0).build()])?
-            .commit_from_file(&model_path_clone)?;
-        
-        // FIX 2: Removed `execution_providers()` print as it caused compilation error.
-        // Verify GPU usage with `watch -n 1 nvidia-smi` in another terminal.
-        println!("Model Session Created (Check nvidia-smi for GPU usage)");
+    let _ = producer_handle.join().map_err(|e| anyhow::anyhow!("Producer thread panicked: {:?}", e))?;
+    let results_by_path = consumer_handle.join().map_err(|e| anyhow::anyhow!("Consumer thread panicked: {:?}", e))??;
 
-        let mut batch = Vec::with_capacity(32);
-        let mut global_results: HashMap<String, Vec<Detection>> = HashMap::new();
+    process_and_save_results(results_by_path, &output_dir)?;
 
-        for task in rx {
-            batch.push(task);
-            if batch.len() >= 32 {
-                process_batch(&mut session, &mut batch, &mut global_results)?;
-            }
-        }
-        if !batch.is_empty() {
-            process_batch(&mut session, &mut batch, &mut global_results)?;
-        }
-
-        // Finalize
-        println!("Inference Done. Exporting Results...");
-        for (tiff_id, mut detections) in global_results {
-            // Global NMS Pass to remove duplicates at tile borders
-            modules::post_processing::non_maximum_suppression(&mut detections, 0.45);
-
-            let file_path = format!("{}/{}_manifest.json", output_dir, tiff_id);
-            let file = File::create(&file_path)?;
-            serde_json::to_writer_pretty(BufWriter::new(file), &detections)?;
-            println!("Saved: {}", file_path);
-        }
-        Ok(())
-    });
-
-    // 5. Producer Loop
-    let entries = fs::read_dir(input_dir)?;
-    for entry in entries {
-        let entry = entry?;
-        let path = entry.path();
-
-        if path.extension().map_or(false, |e| e == "jpg" || e == "jpeg") {
-            let filename = path.file_name().unwrap().to_str().unwrap().to_string();
-            let (off_x, off_y) = calculate_offsets(&filename);
-
-            let task = InferenceTask {
-                image_data: fs::read(&path)?,
-                global_offset_x: off_x,
-                global_offset_y: off_y,
-                tile_filename: filename,
-            };
-            
-            if tx.send(task).is_err() {
-                break; // Stop if thread died
-            }
-        }
-    }
-
-    drop(tx);
-    handle.join().unwrap()?;
     println!("Pipeline Complete.");
     Ok(())
 }

@@ -15,7 +15,6 @@ pub struct Detection {
     pub bbox: BoundingBox,
     pub class_id: usize,
     pub confidence: f32,
-    pub source_tile: String,
 }
 
 /// Helper: Calculate Intersection over Union (IoU)
@@ -68,7 +67,7 @@ pub fn non_maximum_suppression(detections: &mut Vec<Detection>, iou_threshold: f
 
 /// Parses the Raw Output from the ONNX Model
 /// Format: [Batch, 1000, 6] -> [x_min, y_min, x_max, y_max, confidence, class_id]
-pub fn parse_output(output: ArrayView2<f32>, tile_filename: &str) -> Vec<Detection> {
+pub fn parse_output(output: ArrayView2<f32>) -> Vec<Detection> {
     let mut detections = Vec::new();
     const IMG_SIZE: f32 = 896.0;
     const MAX_COORD: f32 = IMG_SIZE - 1.0;
@@ -86,14 +85,8 @@ pub fn parse_output(output: ArrayView2<f32>, tile_filename: &str) -> Vec<Detecti
         let class_id = proposal[5] as usize;
 
         if class_id < CLASS_THRESHOLDS.len() && confidence > CLASS_THRESHOLDS[class_id] {
-            // 1. Handle Normalization: If values are small (<= 1.0), scale to 896 pixels
-            // Use a small epsilon (1.01) to handle floating point overflow at edges
-            let (mut x_min, mut y_min, mut x_max, mut y_max) = if v2 <= 1.01 {
-                // Model outputs normalized coords (0-1). Scale to tile pixels; clamp to avoid edge spill.
-                (v0 * MAX_COORD, v1 * MAX_COORD, v2 * MAX_COORD, v3 * MAX_COORD)
-            } else {
-                (v0, v1, v2, v3)
-            };
+            // Force direct pixel usage and remove normalization heuristic
+            let (mut x_min, mut y_min, mut x_max, mut y_max) = (v0, v1, v2, v3);
 
             // Clamp to tile bounds and enforce a minimum 1px extent to reduce corner drift.
             x_min = x_min.clamp(0.0, MAX_COORD);
@@ -111,7 +104,6 @@ pub fn parse_output(output: ArrayView2<f32>, tile_filename: &str) -> Vec<Detecti
                 bbox: BoundingBox { x_min, y_min, x_max, y_max },
                 class_id,
                 confidence,
-                source_tile: tile_filename.to_string(),
             });
         }
     }

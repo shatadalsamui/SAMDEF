@@ -8,16 +8,16 @@
 // 6: tank               (Neon Orange)
 // 7: container lot      (Neon Blue-Green)
 use anyhow::Result;
-use ab_glyph::{FontRef, PxScale};
-use image::{Rgb};
-use imageproc::drawing::{draw_hollow_rect_mut, draw_text_mut};
+use ab_glyph::FontRef;
+use image::{Rgb, RgbImage};
+use imageproc::drawing::draw_hollow_rect_mut;
 use imageproc::rect::Rect;
 use serde::Deserialize;
 use std::fs::{self, File};
 use std::io::BufReader;
 use std::path::Path;
 use turbojpeg::{Compressor, Subsamp, PixelFormat, Image, OutputBuf};
-use tiff::decoder::Decoder;
+use tiff::decoder::{Decoder, DecodingResult};
 
 // Neon color palette for 8 classes
 const NEON_COLORS: [Rgb<u8>; 8] = [
@@ -32,7 +32,6 @@ const NEON_COLORS: [Rgb<u8>; 8] = [
 ];
 
 // --- CONFIGURATION ---
-const TIFF_DIR: &str = "/home/shatadal/SAMDEF_DATA/val_images";
 const JSON_DIR: &str = "/home/shatadal/SAMDEF/raw_data/inference/results";
 const OUTPUT_DIR: &str = "/home/shatadal/SAMDEF/raw_data/inference/annotated";
 const FONT_PATH: &str = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf";
@@ -50,19 +49,26 @@ struct Detection {
     confidence: f32,
 }
 
+#[derive(Debug, Deserialize)]
+struct FinalOutput {
+    source_image: String,
+    detections: Vec<Detection>,
+}
+
 fn main() -> Result<()> {
     fs::create_dir_all(OUTPUT_DIR)?;
     println!(" Visualizer Running...");
 
-    // Try load font
-    let font_data = fs::read(FONT_PATH).unwrap_or(Vec::new());
+    let font_data = fs::read(FONT_PATH).unwrap_or_else(|_| Vec::new());
     let font = FontRef::try_from_slice(&font_data).ok();
 
     for entry in fs::read_dir(JSON_DIR)? {
         let entry = entry?;
         let path = entry.path();
-        if path.to_string_lossy().ends_with("_manifest.json") {
-            process_map(&path, &font)?;
+        if path.to_string_lossy().ends_with("_results.json") {
+            if let Err(e) = process_map(&path, &font) {
+                eprintln!("Error processing map for {:?}: {}", path, e);
+            }
         }
     }
     println!(" Done. Check: {}", OUTPUT_DIR);
@@ -70,18 +76,19 @@ fn main() -> Result<()> {
 }
 
 fn process_map(json_path: &Path, font: &Option<FontRef>) -> Result<()> {
-    let filename = json_path.file_name().unwrap().to_string_lossy();
-    let tiff_id = filename.replace("_manifest.json", "");
-    let detections: Vec<Detection> = serde_json::from_reader(BufReader::new(File::open(json_path)?))?;
+    let output: FinalOutput = serde_json::from_reader(BufReader::new(File::open(json_path)?))?;
+    let detections = output.detections;
+    let image_path = Path::new(&output.source_image);
 
-    let image_path = format!("{}/{}.tif", TIFF_DIR, tiff_id);
-    if !Path::new(&image_path).exists() {
-        println!("Image {} does not exist", image_path);
+    if !image_path.exists() {
+        println!("Image {} does not exist", image_path.display());
         return Ok(());
     }
+    
+    let tiff_id = image_path.file_stem().and_then(|s| s.to_str()).unwrap_or("unknown");
 
     let file = File::open(&image_path)?;
-    let mut decoder = Decoder::new(&file)?;
+    let mut decoder = Decoder::new(file)?;
     let (width, height) = decoder.dimensions()?;
     let _color_type = decoder.colortype()?;
     let _planar_config = decoder.get_tag(tiff::tags::Tag::PlanarConfiguration)?;
@@ -95,15 +102,20 @@ fn process_map(json_path: &Path, font: &Option<FontRef>) -> Result<()> {
         let chunk_data = decoder.read_chunk(i)?;
         match chunk_data {
             tiff::decoder::DecodingResult::U8(chunk) => data.extend_from_slice(&chunk),
+            tiff::decoder::DecodingResult::U16(chunk) => {
+                // Convert U16 to U8 by bit shift
+                let u8_chunk: Vec<u8> = chunk.into_iter().map(|p| (p >> 8) as u8).collect();
+                data.extend_from_slice(&u8_chunk);
+            }
             _ => {
-                println!("Unsupported chunk format for {}", image_path);
+                println!("Unsupported chunk format for {}", image_path.display());
                 return Ok(());
             }
         }
     }
     let size = (width * height) as usize;
     let mut image = if data.len() == size * 3 {
-        // Planar configuration: RRR...GGG...BBB...
+        // Planar configuration: RRR...GGG...BBB... -> RGBRGB...
         let mut rgb_data = Vec::with_capacity(size * 3);
         for i in 0..size {
             rgb_data.push(data[i]); // R
@@ -111,21 +123,21 @@ fn process_map(json_path: &Path, font: &Option<FontRef>) -> Result<()> {
             rgb_data.push(data[i + 2 * size]); // B
         }
         image::RgbImage::from_raw(width, height, rgb_data).unwrap()
+    } else if data.len() == size {
+        // Grayscale
+        let rgb_data: Vec<u8> = data.into_iter().flat_map(|p| vec![p, p, p]).collect();
+        image::RgbImage::from_raw(width, height, rgb_data).unwrap()
     } else {
-        println!("Unexpected data length: expected {}, got {}", size * 3, data.len());
+        println!("Unexpected data length: expected {} or {}, got {}", size * 3, size, data.len());
         return Ok(());
     };
 
-    let white = Rgb([255, 255, 255]);
-
     for det in detections {
-        // Round to nearest pixel and clamp to image bounds to avoid corner drift.
         let mut x = det.bbox.x_min.round() as i32;
         let mut y = det.bbox.y_min.round() as i32;
         let mut w = (det.bbox.x_max - det.bbox.x_min).round() as u32;
         let mut h = (det.bbox.y_max - det.bbox.y_min).round() as u32;
 
-        // Enforce minimum size of 1x1 and clamp box within the image.
         if w == 0 { w = 1; }
         if h == 0 { h = 1; }
         if x < 0 { x = 0; }
@@ -133,40 +145,14 @@ fn process_map(json_path: &Path, font: &Option<FontRef>) -> Result<()> {
         if x as u32 + w > width { w = width.saturating_sub(x as u32).max(1); }
         if y as u32 + h > height { h = height.saturating_sub(y as u32).max(1); }
 
-        // Use fixed neon color for each class (see mapping above)
         let color = NEON_COLORS[det.class_id % NEON_COLORS.len()];
-
-        // Draw Thin Box (1px)
         draw_hollow_rect_mut(&mut image, Rect::at(x, y).of_size(w, h), color);
-
-        // // --- LABEL DRAWING BLOCK: comment out this block to hide class/conf labels ---
-        // if let Some(f) = font {
-        //     let label = format!("{}|{:.1}", det.class_id, det.confidence);
-        //     let font_size = 10.0;
-        //     let scale = PxScale { x: font_size, y: font_size };
-        //     let label_width = (label.len() as f32 * font_size * 0.6).ceil() as u32;
-        //     let label_height = (font_size * 1.2).ceil() as u32;
-        //     let mut label_y = y - label_height as i32 - 2;
-        //     if label_y < 0 { label_y = y + h as i32 + 2; }
-        //     let mut label_x = x;
-        //     if label_x < 0 { label_x = 0; }
-        //     if (label_x as u32 + label_width) > width { label_x = width.saturating_sub(label_width) as i32; }
-        //     let bg_rect = Rect::at(label_x, label_y).of_size(label_width, label_height);
-        //     let bg_color = Rgb([
-        //         color[0].saturating_add(60).min(255),
-        //         color[1].saturating_add(60).min(255),
-        //         color[2].saturating_add(60).min(255),
-        //     ]);
-        //     imageproc::drawing::draw_filled_rect_mut(&mut image, bg_rect, bg_color);
-        //     draw_text_mut(&mut image, Rgb([0, 0, 0]), label_x, label_y, scale, &f, &label);
-        // }
-        // // --- END LABEL DRAWING BLOCK ---
     }
+    
     let output_name = format!("{}_annotated.jpg", tiff_id);
-
     let mut compressor = Compressor::new()?;
-    compressor.set_quality(100)?;
-    compressor.set_subsamp(Subsamp::None)?; // 4:4:4 chroma subsampling for high-fidelity edges
+    compressor.set_quality(95)?;
+    compressor.set_subsamp(Subsamp::None)?;
     let tj_img = Image {
         pixels: image.as_raw().as_slice(),
         width: width as usize,
