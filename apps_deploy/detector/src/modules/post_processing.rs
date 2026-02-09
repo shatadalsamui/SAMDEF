@@ -74,7 +74,7 @@ pub fn parse_output(output: ArrayView2<f32>, tile_filename: &str) -> Vec<Detecti
     const MAX_COORD: f32 = IMG_SIZE - 1.0;
 
     // CONFIDENCE THRESHOLDS (0.0 to 1.0)
-    const CLASS_THRESHOLDS: [f32; 8] = [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05];
+    const CLASS_THRESHOLDS: [f32; 8] = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1];
 
     for proposal in output.rows() {
         // Raw values: [v0, v1, v2, v3, confidence, class_id]

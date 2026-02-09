@@ -52,7 +52,7 @@ struct Detection {
 
 fn main() -> Result<()> {
     fs::create_dir_all(OUTPUT_DIR)?;
-    println!("🚀 Visualizer Running...");
+    println!(" Visualizer Running...");
 
     // Try load font
     let font_data = fs::read(FONT_PATH).unwrap_or(Vec::new());
@@ -65,7 +65,7 @@ fn main() -> Result<()> {
             process_map(&path, &font)?;
         }
     }
-    println!("✅ Done. Check: {}", OUTPUT_DIR);
+    println!(" Done. Check: {}", OUTPUT_DIR);
     Ok(())
 }
 
