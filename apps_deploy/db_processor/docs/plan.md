@@ -46,17 +46,17 @@ graph LR
     docker volume create samdef_pgdata
     ```
 
-2. **Start the PostGIS container (PostgreSQL 18, PostGIS 3.4):**
-    ```bash
-    docker run -d \
-      --name samdef_postgis \
-      -e POSTGRES_USER=postgres \
-      -e POSTGRES_PASSWORD=password \
-      -e POSTGRES_DB=samdef \
-      -p 5432:5432 \
-      -v samdef_pgdata:/var/lib/postgresql/data \
-      postgis/postgis:18-3.4
-    ```
+2. **Start the PostGIS container (latest version):**
+        ```bash
+        docker run -d \
+            --name samdef_postgis \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=password \
+            -e POSTGRES_DB=samdef \
+            -p 5432:5432 \
+            -v samdef_pgdata:/var/lib/postgresql/data \
+            postgis/postgis:latest
+        ```
 
 3. **Create the detections table and index after connecting to the database:**
     ```sql
