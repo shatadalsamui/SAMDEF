@@ -1,4 +1,3 @@
-
 # SAMDEF DB Processor Plan
 
 ## 1. System Architecture Overview
@@ -21,7 +20,6 @@ graph LR
      A[Detector (Producer)] -- Zenoh --> B[DB Processor (Consumer)]
      B --> C[PostGIS Database]
 ```
-
 
 ## 2. Infrastructure Specification (Database)
 
@@ -47,43 +45,50 @@ graph LR
     ```
 
 2. **Start the PostGIS container (latest version):**
-        ```bash
-        docker run -d \
-            --name samdef_postgis \
-            -e POSTGRES_USER=postgres \
-            -e POSTGRES_PASSWORD=password \
-            -e POSTGRES_DB=samdef \
-            -p 5432:5432 \
-            -v samdef_pgdata:/var/lib/postgresql/data \
-            postgis/postgis:latest
-        ```
+    ```bash
+    docker run -d \
+        --name samdef_postgis \
+        -e POSTGRES_USER=postgres \
+        -e POSTGRES_PASSWORD=password \
+        -e POSTGRES_DB=samdef \
+        -p 5432:5432 \
+        -v samdef_pgdata:/var/lib/postgresql/data \
+        postgis/postgis:latest
+    ```
 
-3. **Create the detections table and index after connecting to the database:**
+3. **Create the detections table and indexes after connecting to the database:**
     ```sql
     CREATE TABLE IF NOT EXISTS detections (
-         id BIGSERIAL PRIMARY KEY,
-         source_file TEXT,
-         class_id INTEGER,
-         confidence REAL,
-         geom geometry(Point, 4326),
-         created_at TIMESTAMP DEFAULT NOW()
+        id BIGSERIAL PRIMARY KEY,
+        source_file TEXT,
+        class_id INTEGER,
+        confidence REAL,
+        geom_point geometry(Point, 4326),
+        geom_bbox geometry(Polygon, 4326),
+        created_at TIMESTAMP DEFAULT NOW()
     );
-    CREATE INDEX IF NOT EXISTS detections_geom_gist ON detections USING GIST (geom);
+    CREATE INDEX IF NOT EXISTS detections_geom_point_gist ON detections USING GIST (geom_point);
+    CREATE INDEX IF NOT EXISTS detections_geom_bbox_gist ON detections USING GIST (geom_bbox);
     ```
 
 Table: detections
 
-| Column       | Type                | Notes                        |
-|--------------|---------------------|------------------------------|
-| id           | BigInt/Serial       | Primary Key                  |
-| source_file  | Text                | Indexed                      |
-| class_id     | Integer             |                              |
-| confidence   | Float (Real)        |                              |
-| geom         | Geometry(Point,4326)| Must use SRID 4326 (WGS84)   |
-| created_at   | Timestamp           | Default Now                  |
+| Column       | Type                      | Notes                                      |
+|--------------|---------------------------|--------------------------------------------|
+| id           | BigInt/Serial             | Primary Key                                |
+| source_file  | Text                      | Indexed                                    |
+| class_id     | Integer                   |                                            |
+| confidence   | Float (Real)              |                                            |
+| geom_point   | Geometry(Point,4326)      | Center of bounding box (SRID 4326)         |
+| geom_bbox    | Geometry(Polygon,4326)    | Full bounding box as polygon (SRID 4326)   |
+| created_at   | Timestamp                 | Default Now                                |
 
-Index: GIST index on the geom column for geospatial performance.
+Indexes:  
+- GIST index on `geom_point` for fast point queries  
+- GIST index on `geom_bbox` for fast polygon queries
 
+> **Planned Extensions:**  
+> Additional tables (e.g., `detection_summary`, `image_metadata`) will be added to store per-image statistics and metadata.
 
 ## 3. Data Protocol Specification (The "Wire" Contract)
 
@@ -96,7 +101,6 @@ Index: GIST index on the geom column for geospatial performance.
 **Topic Naming Strategy:** `satellite/detections/{filename}`
 
 Example: `satellite/detections/Map_Region_04.tif`
-
 
 **Payload Structure (DetectionPayload):**
 
@@ -114,7 +118,6 @@ Body (Vector of Detections):
     - `y_max` (f32): Maximum Y pixel
 - `class_id` (usize): Object type
 - `confidence` (f32): Detection score
-
 
 ## 4. Service Spec: The Detector (Producer)
 
@@ -145,8 +148,6 @@ Broadcast:
 Cleanup:
 - Strict Rule: Do not write JSON or CSV files to disk. Do not connect to the database.
 
-
-
 ## 5. Service Spec: The DB Processor (Consumer)
 
 **Role:** Headless Database Ingestor
@@ -170,17 +171,19 @@ Atomic Transaction Logic (Per TIFF):
 - Trigger: Receives a DetectionPayload (containing all detections for one complete TIFF)
 - Step A (Deserialize): Decode the Bincode bytes into the Rust struct
 - Step B (Geospatial Projection):
-    - Iterate through the list of detections
-    - Convert Pixel Coordinates (x_min, y_min, x_max, y_max) → Geographic Coordinates (Lon, Lat) using the geo_transform matrix provided in the payload
+    - For each detection, convert pixel coordinates to:
+        - Center point (for `geom_point`)
+        - Polygon (for `geom_bbox`)
+    - Use the geo_transform matrix for conversion.
     - Note: No NMS or filtering happens here; raw inference results are trusted
 - Step C (Bulk Persistence):
     - Open a PostgreSQL Transaction
     - Execute a Single Query using UNNEST to insert all records for that TIFF at once
     - SQL Pattern:
       ```sql
-      INSERT INTO detections (source_file, class_id, confidence, geom)
+      INSERT INTO detections (source_file, class_id, confidence, geom_point, geom_bbox)
       SELECT $1, unnest($2::int[]), unnest($3::float4[]),
-             ST_SetSRID(ST_MakePoint(unnest($4::float8[]), unnest($5::float8[])), 4326)
+             unnest($4::geometry[]), unnest($5::geometry[])
       ```
       Commit Transaction
 
@@ -192,7 +195,6 @@ Integration Note for Future Iced UI:
 By treating the database as the "Source of Truth," you set up the future UI perfectly:
 - Now: The DB Processor blindly dumps data into PostGIS
 - Later: The Iced UI will run: `SELECT * FROM detections WHERE source_file = 'Map_Tile_04.tif'` to render overlays on demand, removing the need to ever draw permanent boxes on the raw images
-
 
 ## 6. Execution Plan
 

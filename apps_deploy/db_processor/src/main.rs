@@ -1,7 +1,10 @@
+use crate::modules::writer::zenoh_subscriber::ZenohSubscriber;
 use dotenv::dotenv;
 use sqlx::PgPool;
 use std::env;
 use tokio::fs;
+
+mod modules;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -16,7 +19,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pool = PgPool::connect(&database_url).await?;
 
     // Read the schema SQL file
-    let schema_path = "src/schema/init.sql";
+    let schema_path = "src/modules/schema/init.sql";
     let schema_sql = fs::read_to_string(schema_path).await?;
 
     // Split and execute each SQL statement
@@ -34,6 +37,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     println!("Schema initialization complete!");
+
+    // Start Zenoh subscriber for detection payloads
+    let subscriber = ZenohSubscriber::new(pool).await;
+    subscriber.listen_and_print().await;
 
     Ok(())
 }

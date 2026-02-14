@@ -5,14 +5,15 @@ use std::path::PathBuf;
 use std::thread;
 
 mod modules;
+use modules::data::results::process_and_save_results;
 use modules::data::task::InferenceTask;
 use modules::io::consumer::run_consumer;
 use modules::io::producer::run_producer;
-use modules::data::results::process_and_save_results;
 
 const BATCH_SIZE: usize = 32;
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     env_logger::init();
     let _ = ort::init().with_name("SAMDEF_Detector").commit();
 
@@ -31,10 +32,14 @@ fn main() -> Result<()> {
     let consumer_handle = thread::spawn(move || run_consumer(task_rx, model_path));
     let producer_handle = thread::spawn(move || run_producer(input_dir, task_tx));
 
-    let _ = producer_handle.join().map_err(|e| anyhow::anyhow!("Producer thread panicked: {:?}", e))?;
-    let results_by_path = consumer_handle.join().map_err(|e| anyhow::anyhow!("Consumer thread panicked: {:?}", e))??;
+    let _ = producer_handle
+        .join()
+        .map_err(|e| anyhow::anyhow!("Producer thread panicked: {:?}", e))?;
+    let results_by_path = consumer_handle
+        .join()
+        .map_err(|e| anyhow::anyhow!("Consumer thread panicked: {:?}", e))??;
 
-    process_and_save_results(results_by_path, &output_dir)?;
+    process_and_save_results(results_by_path, &output_dir).await?;
 
     println!("Pipeline Complete.");
     Ok(())

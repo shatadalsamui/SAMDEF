@@ -12,3 +12,19 @@ CREATE TABLE IF NOT EXISTS detections (
 -- Create spatial indexes for efficient geospatial queries
 CREATE INDEX IF NOT EXISTS detections_geom_point_gist ON detections USING GIST (geom_point);
 CREATE INDEX IF NOT EXISTS detections_geom_bbox_gist ON detections USING GIST (geom_bbox);
+
+-- New table for pixel coordinates and geo_transform
+CREATE TABLE IF NOT EXISTS detections_pixels (
+    id           BIGSERIAL PRIMARY KEY,
+    source_file  TEXT,
+    class_id     INTEGER,
+    confidence   REAL,
+    x_min        REAL,
+    y_min        REAL,
+    x_max        REAL,
+    y_max        REAL,
+    created_at   TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS detections_pixels_source_file_idx ON detections_pixels (source_file);
+CREATE INDEX IF NOT EXISTS detections_pixels_class_id_idx ON detections_pixels (class_id);
