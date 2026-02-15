@@ -1,6 +1,8 @@
 use ndarray::ArrayView2;
+use rayon::prelude::*;
 use serde::Serialize;
 use std::cmp::Ordering;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, Serialize)]
 pub struct BoundingBox {
@@ -37,32 +39,82 @@ fn calculate_iou(box_a: &BoundingBox, box_b: &BoundingBox) -> f32 {
     }
 }
 
-/// Standard Non-Maximum Suppression
+/// Effectively O(n) Spatial Grid NMS with 3x3 Neighborhood Overlap
 pub fn non_maximum_suppression(detections: &mut Vec<Detection>, iou_threshold: f32) {
+    use rayon::prelude::*;
+    use std::cmp::Ordering;
+    use std::collections::HashMap;
+
     if detections.is_empty() {
         return;
     }
 
-    // Sort by confidence (High -> Low)
-    detections.sort_unstable_by(|a, b|
-        b.confidence.partial_cmp(&a.confidence).unwrap_or(Ordering::Equal)
-    );
+    // Grid size must be larger than your largest object (e.g., 1000px)
+    const GRID_SIZE: f32 = 1000.0;
 
-    let mut i = 0;
-    while i < detections.len() {
-        let mut j = i + 1;
-        while j < detections.len() {
-            if
-                detections[i].class_id == detections[j].class_id &&
-                calculate_iou(&detections[i].bbox, &detections[j].bbox) > iou_threshold
-            {
-                detections.remove(j);
-            } else {
-                j += 1;
-            }
-        }
-        i += 1;
+    // 1. Group by class to allow parallel execution
+    let all_detections = std::mem::take(detections);
+    let mut class_map: HashMap<usize, Vec<Detection>> = HashMap::new();
+    for d in all_detections {
+        class_map.entry(d.class_id).or_default().push(d);
     }
+
+    // 2. Process classes in parallel using Rayon
+    *detections = class_map
+        .into_par_iter()
+        .flat_map(|(_, mut class_dets)| {
+            // Sort by confidence (High to Low): O(n log n)
+            class_dets.sort_unstable_by(|a, b| {
+                b.confidence
+                    .partial_cmp(&a.confidence)
+                    .unwrap_or(Ordering::Equal)
+            });
+
+            let n = class_dets.len();
+            let mut suppressed = vec![false; n];
+            let mut kept = Vec::new();
+
+            // 3. Build Spatial Grid for this class
+            // Maps (grid_x, grid_y) -> Indices of boxes in that cell
+            let mut grid: HashMap<(i32, i32), Vec<usize>> = HashMap::new();
+            for (idx, det) in class_dets.iter().enumerate() {
+                let gx = (det.bbox.x_min / GRID_SIZE).floor() as i32;
+                let gy = (det.bbox.y_min / GRID_SIZE).floor() as i32;
+                grid.entry((gx, gy)).or_default().push(idx);
+            }
+
+            // 4. Run NMS with 3x3 Neighborhood Search
+            for i in 0..n {
+                if suppressed[i] {
+                    continue;
+                }
+                let current_det = &class_dets[i];
+                kept.push(current_det.clone());
+
+                let gx = (current_det.bbox.x_min / GRID_SIZE).floor() as i32;
+                let gy = (current_det.bbox.y_min / GRID_SIZE).floor() as i32;
+
+                // Check 3x3 neighborhood (9 cells) to handle overlaps/boundaries
+                for nx in (gx - 1)..=(gx + 1) {
+                    for ny in (gy - 1)..=(gy + 1) {
+                        if let Some(indices) = grid.get(&(nx, ny)) {
+                            for &j in indices {
+                                // Only check lower-confidence boxes that aren't already suppressed
+                                if j > i && !suppressed[j] {
+                                    if calculate_iou(&current_det.bbox, &class_dets[j].bbox)
+                                        > iou_threshold
+                                    {
+                                        suppressed[j] = true; // O(1) update
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            kept
+        })
+        .collect();
 }
 
 /// Parses the Raw Output from the ONNX Model
@@ -101,7 +153,12 @@ pub fn parse_output(output: ArrayView2<f32>) -> Vec<Detection> {
             }
 
             detections.push(Detection {
-                bbox: BoundingBox { x_min, y_min, x_max, y_max },
+                bbox: BoundingBox {
+                    x_min,
+                    y_min,
+                    x_max,
+                    y_max,
+                },
                 class_id,
                 confidence,
             });

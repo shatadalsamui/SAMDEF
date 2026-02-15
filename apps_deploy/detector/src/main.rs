@@ -5,8 +5,7 @@ use std::path::PathBuf;
 use std::thread;
 
 mod modules;
-use modules::data::results::process_and_save_results;
-use modules::data::task::InferenceTask;
+use modules::data::task::PipelineMessage;
 use modules::io::consumer::run_consumer;
 use modules::io::producer::run_producer;
 
@@ -27,20 +26,25 @@ async fn main() -> Result<()> {
     println!("Input: {:?}", input_dir);
     println!("Model: {:?}", model_path);
 
-    let (task_tx, task_rx) = channel::bounded::<InferenceTask>(BATCH_SIZE * 2);
+    // Total pipeline timer
+    let start_time = std::time::Instant::now();
 
-    let consumer_handle = thread::spawn(move || run_consumer(task_rx, model_path));
-    let producer_handle = thread::spawn(move || run_producer(input_dir, task_tx));
+    // Use PipelineMessage channel instead of InferenceTask
+    let (msg_tx, msg_rx) = channel::bounded::<PipelineMessage>(BATCH_SIZE * 2);
+
+    // Pass output_dir to consumer for per-file saving/publishing
+    let consumer_handle = thread::spawn(move || run_consumer(msg_rx, model_path, output_dir));
+    let producer_handle = thread::spawn(move || run_producer(input_dir, msg_tx));
 
     let _ = producer_handle
         .join()
         .map_err(|e| anyhow::anyhow!("Producer thread panicked: {:?}", e))?;
-    let results_by_path = consumer_handle
+    let _ = consumer_handle
         .join()
-        .map_err(|e| anyhow::anyhow!("Consumer thread panicked: {:?}", e))??;
+        .map_err(|e| anyhow::anyhow!("Consumer thread panicked: {:?}", e))?;
 
-    process_and_save_results(results_by_path, &output_dir).await?;
-
+    let total_duration = start_time.elapsed();
     println!("Pipeline Complete.");
+    println!("Total pipeline execution time: {:.2?}", total_duration);
     Ok(())
 }

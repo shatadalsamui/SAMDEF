@@ -1,19 +1,24 @@
 use anyhow::Result;
 use crossbeam::channel::Sender;
 use gdal::Dataset;
-use std::path::Path;
 use log::{info, warn};
+use std::path::Path;
 
-use crate::modules::data::task::InferenceTask;
+use crate::modules::data::task::{InferenceTask, PipelineMessage};
 
 const TILE_SIZE: usize = 896;
 const STRIDE: usize = 716;
 
-pub fn process_geotiff(
-    path: &Path,
-    task_sender: Sender<InferenceTask>,
-) -> Result<()> {
-    info!("Processing GeoTIFF: {:?}", path);
+/// Streaming mode: send PipelineMessage::Process for each tile
+pub fn process_geotiff(source_path_str: &str, msg_sender: Sender<PipelineMessage>) -> Result<()> {
+    let path = Path::new(source_path_str);
+    info!("Processing GeoTIFF (streaming): {:?}", path);
+
+    // Canonicalize the source path for consistency
+    let canonical_path = match path.canonicalize() {
+        Ok(p) => p.to_string_lossy().to_string(),
+        Err(_) => source_path_str.to_string(),
+    };
 
     let dataset = Dataset::open(path)?;
     let (width, height) = dataset.raster_size();
@@ -22,6 +27,8 @@ pub fn process_geotiff(
     let band1 = dataset.rasterband(1)?; // R
     let band2 = dataset.rasterband(2)?; // G
     let band3 = dataset.rasterband(3)?; // B
+
+    let mut tile_count = 0;
 
     let mut y = 0;
     while y < height {
@@ -46,26 +53,29 @@ pub fn process_geotiff(
             let g_buffer = band2.read_as::<u8>(window_offset, window_size, buffer_size, None)?;
             let b_buffer = band3.read_as::<u8>(window_offset, window_size, buffer_size, None)?;
 
-            let mut interleaved_data =
-                Vec::with_capacity(TILE_SIZE * TILE_SIZE * 3);
+            // Optimized: Pre-allocate and fill interleaved_data for zero-overhead
+            let len = TILE_SIZE * TILE_SIZE;
+            let mut interleaved_data = vec![0u8; len * 3];
 
-            for i in 0..(TILE_SIZE * TILE_SIZE) {
-                interleaved_data.push(r_buffer.data[i]);
-                interleaved_data.push(g_buffer.data[i]);
-                interleaved_data.push(b_buffer.data[i]);
+            for i in 0..len {
+                interleaved_data[i * 3] = r_buffer.data[i];
+                interleaved_data[i * 3 + 1] = g_buffer.data[i];
+                interleaved_data[i * 3 + 2] = b_buffer.data[i];
             }
-            
+
             let task = InferenceTask {
                 image_data: interleaved_data,
-                source_path: path.to_str().unwrap_or("").to_string(),
+                source_path: source_path_str.to_string(),
                 global_offset_x: tile_x as i32,
                 global_offset_y: tile_y as i32,
                 geo_transform,
             };
 
-            if let Err(e) = task_sender.send(task) {
-                warn!("Failed to send task to inference channel: {}", e);
+            if let Err(_e) = msg_sender.send(PipelineMessage::Process(task)) {
+                warn!("Failed to send PipelineMessage::Process to inference channel");
             }
+
+            tile_count += 1;
 
             if x + STRIDE >= width {
                 break;
@@ -77,6 +87,17 @@ pub fn process_geotiff(
             break;
         }
         y += STRIDE;
+    }
+
+    // Send EndOfFile with expected_tiles and canonicalized path
+    if let Err(_e) = msg_sender.send(PipelineMessage::EndOfFile {
+        source_path: canonical_path,
+        geo_transform,
+        width: width as u32,
+        height: height as u32,
+        expected_tiles: tile_count,
+    }) {
+        warn!("Failed to send PipelineMessage::EndOfFile");
     }
 
     Ok(())
