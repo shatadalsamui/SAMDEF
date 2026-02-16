@@ -17,110 +17,171 @@
 
 ## Overview
 
-**SAMDEF** is a comprehensive, modular monolith system for processing Intelligence, Surveillance, and Reconnaissance (ISR) data using AI-driven object detection. The system is split into deployment and training modules, enabling real-time geospatial imagery processing and continuous model improvement through robust data pipelines.
+**SAMDEF** is a high-performance, modular monolith platform for Intelligence, Surveillance, and Reconnaissance (ISR) data processing at the edge. It is designed for real-time geospatial imagery analysis, object detection, and continuous model improvement, all running on-premise without reliance on cloud or SaaS infrastructure.
+
+---
+
+## Folder Structure
+
+### apps_deploy
+
+```
+apps_deploy/
+├── [db_processor](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/db_processor)/
+│   ├── [docs](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/db_processor/docs)/
+│   │   ├── [plan.md](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/db_processor/docs/plan.md)
+│   │   └── [plan1.md](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/db_processor/docs/plan1.md)
+│   ├── [src](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/db_processor/src)/
+│   │   ├── [main.rs](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/db_processor/src/main.rs)
+│   │   └── [modules](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/db_processor/src/modules)/
+│   │       ├── [mod.rs](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/db_processor/src/modules/mod.rs)
+│   │       ├── [reader](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/db_processor/src/modules/reader)/
+│   │       ├── [schema](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/db_processor/src/modules/schema)/
+│   │       └── [writer](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/db_processor/src/modules/writer)/
+│   ├── [Cargo.toml](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/db_processor/Cargo.toml)
+│   └── [Cargo.lock](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/db_processor/Cargo.lock)
+├── [detector](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/detector)/
+│   ├── [docs](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/detector/docs)/
+│   │   ├── [architecture.md](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/detector/docs/architecture.md)
+│   │   └── [plan.md](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/detector/docs/plan.md)
+│   ├── [model](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/detector/model)/
+│   │   └── [best.onnx](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/detector/model/best.onnx)
+│   ├── [src](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/detector/src)/
+│   │   ├── [main.rs](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/detector/src/main.rs)
+│   │   └── [modules](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/detector/src/modules)/
+│   │       ├── [mod.rs](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/detector/src/modules/mod.rs)
+│   │       ├── [data](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/detector/src/modules/data)/
+│   │       ├── [io](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/detector/src/modules/io)/
+│   │       └── [processing](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/detector/src/modules/processing)/
+│   ├── [.aiexclude](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/detector/.aiexclude)
+│   ├── [Cargo.toml](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/detector/Cargo.toml)
+│   └── [Cargo.lock](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/detector/Cargo.lock)
+├── [post_processor](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/post_processor)/
+│   ├── [src](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/post_processor/src)/
+│   │   └── [main.rs](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/post_processor/src/main.rs)
+│   ├── [Cargo.toml](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/post_processor/Cargo.toml)
+│   └── [Cargo.lock](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/post_processor/Cargo.lock)
+```
+
+### apps_training
+
+```
+apps_training/
+├── [ingestor](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/ingestor)/
+│   ├── [src](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/ingestor/src)/
+│   │   └── [modules](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/ingestor/src/modules)/
+├── [yolo_model_trainer](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/yolo_model_trainer)/
+│   ├── [build](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/yolo_model_trainer/build)/
+│   ├── [src](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/yolo_model_trainer/src)/
+│   │   ├── [cortex](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/yolo_model_trainer/src/cortex)/
+│   │   ├── [models](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/yolo_model_trainer/src/models)/
+│   │   ├── [samdef_brain.egg-info](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/yolo_model_trainer/src/samdef_brain.egg-info)/
+│   │   ├── [utils](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/yolo_model_trainer/src/utils)/
+│   │   └── [SAMDEF_ISR](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/yolo_model_trainer/src/SAMDEF_ISR)/
+│   ├── [venv](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/yolo_model_trainer/venv)/
+```
+
+---
 
 - **Deployment modules** handle live GeoTIFF image processing, object detection, and visualization.
 - **Training modules** manage data preparation and model training to enhance detection accuracy.
 
-<p align="center">
-  <img src="plans/Screenshot from 2026-01-18 18-08-25.png" alt="System Overview" width="600"/>
-</p>
+---
 
 ## Architecture
 
-SAMDEF is a **modular monolith**: each functional component is a decoupled module within a unified codebase. This design enables rapid development and deployment while maintaining clear separation of concerns.
+SAMDEF is structured as a modular monolith: all core logic resides in a unified codebase, with each module responsible for a distinct function. Modules are decoupled for maintainability and communicate via Zenoh in peer-to-peer mode, ensuring efficient and scalable data exchange.
 
 **Key architectural highlights:**
-- 🧩 **Modular Monolith:** All core logic in a single codebase, each module with a distinct function.
-- 🔗 **Decoupled Modules:** Loosely coupled for maintainability and independent development.
-- 🔄 **Zenoh Peer Communication:** All modules communicate via Zenoh in peer mode—no centralized brokers or registries.
-- ⚡ **High Performance:** Rust for deployment/data processing, Python for AI/ML training.
-- 🗄️ **Database Integration:** PostgreSQL for persistent storage of detection results and metadata.
+- **Modular Monolith:** Unified codebase with clear module boundaries.
+- **Decoupled Modules:** Each module can be developed and maintained independently.
+- **Zenoh Peer Communication:** All inter-module communication is handled via Zenoh in peer mode.
+- **High Performance:** Rust for deployment/data processing, Python for AI/ML training.
+- **Database Integration:** PostgreSQL for persistent storage of detection results and metadata.
 
-<p align="center">
-  <img src="plans/Screenshot from 2026-01-18 18-09-15.png" alt="Architecture Diagram" width="600"/>
-</p>
+---
 
 ## Workflow & Data Flow
 
 The SAMDEF workflow consists of two main phases: **training** and **deployment**.
 
 ### Training Phase
-1. Raw ISR data is ingested and labeled using the **Ingestor** module.
-2. Labeled datasets are fed into the **Model Trainer** for YOLO model training.
+1. Raw ISR data is ingested and labeled using the Ingestor module.
+2. Labeled datasets are used by the Model Trainer for YOLO model training.
 3. Trained models are exported in ONNX format for deployment.
 
-<p align="center">
-  <img src="apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run11/train_val.png" alt="Training Workflow" width="500"/>
-</p>
-
 ### Deployment Phase
-1. GeoTIFF images are received and processed by the **Detector** module using virtual tiling.
+1. GeoTIFF images are processed by the Detector module using virtual tiling.
 2. Detections are performed on GPU using ONNX models.
-3. Results are stored in the database via **DB Processor**.
-4. **Post Processor** visualizes detections by annotating images with bounding boxes.
+3. Results are stored in the database via DB Processor.
+4. Post Processor visualizes detections by annotating images with bounding boxes.
 
-<p align="center">
-  <img src="plans/Screenshot from 2026-01-18 18-09-26.png" alt="Deployment Workflow" width="500"/>
-</p>
-
-Data flows from raw ingestion through training to deployment, with feedback loops for model improvement.
-
-<p align="center">
-  <img src="plans/Screenshot from 2026-01-18 18-09-33.png" alt="Data Flow" width="500"/>
-</p>
+---
 
 ## Modular Apps
 
 ### Deployment Modules
 
-#### Detector
-A Rust-based module for object detection on large GeoTIFF images. Utilizes virtual tiling for high-resolution geospatial data, running inference on CUDA-enabled GPUs with YOLOv8 ONNX models. Outputs detection results in JSON with global coordinates.
+#### detector
+- **Purpose:** High-performance object detection on large-scale geospatial imagery (GeoTIFF).
+- **How it works:** 
+  - Uses a producer-consumer pattern with virtual tiling to break large images into manageable tiles.
+  - Tiles are preprocessed and batched for GPU inference using a YOLOv26s ONNX model.
+  - Results are post-processed to global coordinates and output as JSON.
+- **Key features:** Virtual tiling, parallel CPU preprocessing, GPU batching, global coordinate mapping, efficient memory usage.
+- **Folder structure:**
+  - `src/`: Rust source code for tiling, inference, and postprocessing.
+  - `model/`: Contains the ONNX model used for inference.
+  - `docs/`: Architecture and planning documentation.
 
-**Key features:**
-- Virtual tiling for efficient processing
-- GPU-accelerated inference
-- Overlapping tiles to avoid edge artifacts
+#### post_processor
+- **Purpose:** Visualization of detection results.
+- **How it works:** 
+  - Reads JSON outputs from the detector.
+  - Loads original GeoTIFF images and draws bounding boxes with class-specific colors.
+  - Saves annotated images for review and analysis.
+- **Key features:** High-fidelity image annotation, class-specific color coding, efficient handling of large images.
+- **Folder structure:**
+  - `src/`: Rust source code for image annotation and visualization.
 
-#### Post Processor
-A Rust module for visualizing detection results. Reads JSON outputs from Detector, loads original GeoTIFFs, and draws class-specific bounding boxes. Saves annotated images for review and analysis.
-
-**Key features:**
-- High-fidelity image annotation
-- Class-specific color coding
-- Efficient handling of large images
-
-#### DB Processor
-A Rust module managing database operations for detection results. Uses PostgreSQL for metadata storage and Zenoh peer-to-peer communication for real-time data exchange.
-
-**Key features:**
-- Asynchronous database interactions
-- Real-time data publishing via Zenoh peer mode
-- Error handling and logging
+#### db_processor
+- **Purpose:** Database operations for detection results.
+- **How it works:** 
+  - Stores detection metadata in PostgreSQL.
+  - Publishes and receives data via Zenoh peer-to-peer communication.
+  - Enables querying and persistence of historical detections.
+- **Key features:** Asynchronous database interactions, real-time data publishing, robust error handling.
+- **Folder structure:**
+  - `src/`: Rust source code for database and Zenoh integration.
+  - `docs/`: Documentation for database schema and integration.
 
 ---
 
 ### Training Modules
 
-#### Ingestor
-A Rust module for data ingestion and preparation. Provides tools for dataset balancing, label parsing, image labeling, and utilities for processing raw ISR data into labeled datasets.
+#### ingestor
+- **Purpose:** Data ingestion and preparation for model training.
+- **How it works:** 
+  - Processes raw ISR data, balances datasets, parses and converts labels, and prepares images.
+  - Outputs labeled datasets suitable for machine learning.
+- **Key features:** Automated dataset balancing, label format conversion, image preprocessing utilities.
+- **Folder structure:**
+  - `src/`: Rust source code for data ingestion, balancing, and preprocessing.
 
-**Key features:**
-- Automated dataset balancing
-- Label format conversion
-- Image preprocessing utilities
+#### yolo_model_trainer
+- **Purpose:** Training of object detection models using YOLO.
+- **How it works:** 
+  - Trains YOLO models on labeled datasets.
+  - Supports exporting trained models to ONNX format for deployment.
+  - Includes scripts for diagnostics, metric extraction, and model export.
+- **Key features:** Configurable training pipelines, performance monitoring, ONNX export, integration with ingestor outputs.
+- **Folder structure:**
+  - `src/`: Python source code for training, evaluation, and export.
+  - `build/`: Build artifacts and logs.
+  - `venv/`: Python virtual environment for dependencies.
 
-#### Model Trainer
-A Python module built on the YOLO framework for training object detection models. Supports various YOLO variants and includes modules for training runs, constraint files, and metric extraction.
+---
 
-**Key features:**
-- Configurable training pipelines
-- Performance monitoring and logging
-- Model export to ONNX format
-
-<p align="center">
-  <img src="apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run11/perfomance.png" alt="Training Performance" width="500"/>
-</p>
 
 ## Tech Stack
 
@@ -131,13 +192,18 @@ A Python module built on the YOLO framework for training object detection models
 - **Hardware Acceleration:** CUDA GPUs
 - **Image Formats:** GeoTIFF
 
+---
 
 ## Usage
 
-- **Start training:** Run the Model Trainer with appropriate datasets.
-- **Deploy modules:** Launch Detector, DB Processor, and Post Processor in sequence.
+- **Start training:** Use the Model Trainer with datasets prepared by the Ingestor.
+- **Deploy modules:** Launch Detector, DB Processor, and Post Processor as needed.
 - **Monitor:** Use logs and Zenoh topics for real-time monitoring.
+
+---
 
 ## License
 
 This project is **proprietary software**. All rights reserved. No part of this software may be used, reproduced, or distributed without explicit written permission from the copyright holder.
+
+---
