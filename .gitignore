@@ -58,5 +58,8 @@ Thumbs.db
 *.swp
 *.swo
 
+# Inference example images
+inference_examples/*.png
+
 # Gemini file
 GEMINI.md

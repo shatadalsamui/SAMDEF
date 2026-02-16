@@ -152,110 +152,74 @@ The SAMDEF workflow consists of two main phases: **training** and **deployment**
 
 <!-- Example 1 -->
 <p align="center">
-  <a href="https://drive.google.com/uc?export=view&id=1I3NC_L90FkkwJYp0a8qdfq5HWpT9_jcy" target="_blank">
-    <img src="https://drive.google.com/uc?export=view&id=1I3NC_L90FkkwJYp0a8qdfq5HWpT9_jcy" alt="Original 1" width="800"/>
-  </a>
+  <img src="https://www.dropbox.com/scl/fi/wmnhp9aykaw8bmn1njn9z/1434.png?raw=1" alt="Original 1" width="800"/>
 </p>
 <p align="center">
-  <a href="https://drive.google.com/uc?export=view&id=1_PrYFdD512fMXMlqjCkGtAvN07-Tz8eE" target="_blank">
-    <img src="https://drive.google.com/uc?export=view&id=1_PrYFdD512fMXMlqjCkGtAvN07-Tz8eE" alt="Annotated 1" width="800"/>
-  </a>
+  <img src="https://www.dropbox.com/scl/fi/wcfz9i0sp99r9a6u9amf4/1434_annotated.png?raw=1" alt="Annotated 1" width="800"/>
 </p>
 
 <!-- Example 2 -->
 <p align="center">
-  <a href="https://drive.google.com/uc?export=view&id=1mrrexN9Zjj5fbdNYXL48M9Y4RH8s4ftG" target="_blank">
-    <img src="https://drive.google.com/uc?export=view&id=1mrrexN9Zjj5fbdNYXL48M9Y4RH8s4ftG" alt="Original 2" width="800"/>
-  </a>
+  <img src="https://www.dropbox.com/scl/fi/wm6sticm3c15djgh79zci/1464.png?raw=1" alt="Original 2" width="800"/>
 </p>
 <p align="center">
-  <a href="https://drive.google.com/uc?export=view&id=1x25Gdt1bePWUUlhfBGahnnFpkOikMhWE" target="_blank">
-    <img src="https://drive.google.com/uc?export=view&id=1x25Gdt1bePWUUlhfBGahnnFpkOikMhWE" alt="Annotated 2" width="800"/>
-  </a>
+  <img src="https://www.dropbox.com/scl/fi/kftke9o2z6sz0rocj7bum/1464_annotated.png?raw=1" alt="Annotated 2" width="800"/>
 </p>
 
 <!-- Example 3 -->
 <p align="center">
-  <a href="https://drive.google.com/uc?export=view&id=1ar86yUXqa7jKuEcH1LItjXCyoJcDjLlh" target="_blank">
-    <img src="https://drive.google.com/uc?export=view&id=1ar86yUXqa7jKuEcH1LItjXCyoJcDjLlh" alt="Original 3" width="800"/>
-  </a>
+  <img src="https://www.dropbox.com/scl/fi/31a64vv4fu1rv9crt86d5/1471.png?raw=1" alt="Original 3" width="800"/>
 </p>
 <p align="center">
-  <a href="https://drive.google.com/uc?export=view&id=1PQdU61qQCKkvPk9G7NOuWi72yhoGA8Oc" target="_blank">
-    <img src="https://drive.google.com/uc?export=view&id=1PQdU61qQCKkvPk9G7NOuWi72yhoGA8Oc" alt="Annotated 3" width="800"/>
-  </a>
+  <img src="https://www.dropbox.com/scl/fi/wmvshqa7yjfq0w3rf0cmt/1471_annotated.png?raw=1" alt="Annotated 3" width="800"/>
 </p>
 
 <!-- Example 4 -->
 <p align="center">
-  <a href="https://drive.google.com/uc?export=view&id=18TGDYTibh1gepL8GygAqfnrXL7Nv5vc9" target="_blank">
-    <img src="https://drive.google.com/uc?export=view&id=18TGDYTibh1gepL8GygAqfnrXL7Nv5vc9" alt="Original 4" width="800"/>
-  </a>
+  <img src="https://www.dropbox.com/scl/fi/uc5e330ytnv32dk4x451i/2016.png?raw=1" alt="Original 4" width="800"/>
 </p>
 <p align="center">
-  <a href="https://drive.google.com/uc?export=view&id=1Bx7tU3TSXu5Y9udNxfJNr33n3Huv29YW" target="_blank">
-    <img src="https://drive.google.com/uc?export=view&id=1Bx7tU3TSXu5Y9udNxfJNr33n3Huv29YW" alt="Annotated 4" width="800"/>
-  </a>
+  <img src="https://www.dropbox.com/scl/fi/q5cu90uqkiz0v4rju05f3/2016_annotated.png?raw=1" alt="Annotated 4" width="800"/>
 </p>
 
 <!-- Example 5 -->
 <p align="center">
-  <a href="https://drive.google.com/uc?export=view&id=1myGQEGM0jNnGfcoTgnF5TSet21nQjlGE" target="_blank">
-    <img src="https://drive.google.com/uc?export=view&id=1myGQEGM0jNnGfcoTgnF5TSet21nQjlGE" alt="Original 5" width="800"/>
-  </a>
+  <img src="https://www.dropbox.com/scl/fi/zqqmnl36npy8adht2k5q1/2342.png?raw=1" alt="Original 5" width="800"/>
 </p>
 <p align="center">
-  <a href="https://drive.google.com/uc?export=view&id=1dXyBWzfvqb9GrHcWm4kidX7XpMlcmTqv" target="_blank">
-    <img src="https://drive.google.com/uc?export=view&id=1dXyBWzfvqb9GrHcWm4kidX7XpMlcmTqv" alt="Annotated 5" width="800"/>
-  </a>
+  <img src="https://www.dropbox.com/scl/fi/8bunzg4ly0snt78jui46p/2342_annotated.png?raw=1" alt="Annotated 5" width="800"/>
 </p>
 
 <!-- Example 6 -->
 <p align="center">
-  <a href="https://drive.google.com/uc?export=view&id=1hfTugCYAa9qRot_1VfkvQDG7i41JLWLk" target="_blank">
-    <img src="https://drive.google.com/uc?export=view&id=1hfTugCYAa9qRot_1VfkvQDG7i41JLWLk" alt="Original 6" width="800"/>
-  </a>
+  <img src="https://www.dropbox.com/scl/fi/oj52biuuny3yyzuewpwzo/2363.png?raw=1" alt="Original 6" width="800"/>
 </p>
 <p align="center">
-  <a href="https://drive.google.com/uc?export=view&id=1LIzM8ueYkO5-ojtxuHwc5kOYhCaetc3C" target="_blank">
-    <img src="https://drive.google.com/uc?export=view&id=1LIzM8ueYkO5-ojtxuHwc5kOYhCaetc3C" alt="Annotated 6" width="800"/>
-  </a>
+  <img src="https://www.dropbox.com/scl/fi/5x17nvosbnb7ohaacebtq/2363_annotated.png?raw=1" alt="Annotated 6" width="800"/>
 </p>
 
 <!-- Example 7 -->
 <p align="center">
-  <a href="https://drive.google.com/uc?export=view&id=1X8xk4-8mnudJQAU4OFS2TohW-sopWK3G" target="_blank">
-    <img src="https://drive.google.com/uc?export=view&id=1X8xk4-8mnudJQAU4OFS2TohW-sopWK3G" alt="Original 7" width="800"/>
-  </a>
+  <img src="https://www.dropbox.com/scl/fi/tsb0p6fy8gclzs5n64ua9/2411.png?raw=1" alt="Original 7" width="800"/>
 </p>
 <p align="center">
-  <a href="https://drive.google.com/uc?export=view&id=1BQByY_SxBeVCd3BvZC32WPifUFU5xq-F" target="_blank">
-    <img src="https://drive.google.com/uc?export=view&id=1BQByY_SxBeVCd3BvZC32WPifUFU5xq-F" alt="Annotated 7" width="800"/>
-  </a>
+  <img src="https://www.dropbox.com/scl/fi/txyzx8m93dh18kfcdmklp/2411_annotated.png?raw=1" alt="Annotated 7" width="800"/>
 </p>
 
 <!-- Example 8 -->
 <p align="center">
-  <a href="https://drive.google.com/uc?export=view&id=1MlMEvAb20kcFavhl5Rp0LT2T0Ex4P9JB" target="_blank">
-    <img src="https://drive.google.com/uc?export=view&id=1MlMEvAb20kcFavhl5Rp0LT2T0Ex4P9JB" alt="Original 8" width="800"/>
-  </a>
+  <img src="https://www.dropbox.com/scl/fi/g3vl1kb6pgfvvgrtqs3ga/2473.png?raw=1" alt="Original 8" width="800"/>
 </p>
 <p align="center">
-  <a href="https://drive.google.com/uc?export=view&id=1tXpjPnjyycQ5CzxUiwsBeOdE6rl1He6Z" target="_blank">
-    <img src="https://drive.google.com/uc?export=view&id=1tXpjPnjyycQ5CzxUiwsBeOdE6rl1He6Z" alt="Annotated 8" width="800"/>
-  </a>
+  <img src="https://www.dropbox.com/scl/fi/guit90tvjnqd3dbwnddth/2473_annotated.png?raw=1" alt="Annotated 8" width="800"/>
 </p>
 
 <!-- Example 9 -->
 <p align="center">
-  <a href="https://drive.google.com/uc?export=view&id=1XUFDQVnXvOu_Ee7MzoNhda43AL6acr_m" target="_blank">
-    <img src="https://drive.google.com/uc?export=view&id=1XUFDQVnXvOu_Ee7MzoNhda43AL6acr_m" alt="Original 9" width="800"/>
-  </a>
+  <img src="https://www.dropbox.com/scl/fi/fulx97d1rwub787nfxku4/2613.png?raw=1" alt="Original 9" width="800"/>
 </p>
 <p align="center">
-  <a href="https://drive.google.com/uc?export=view&id=19Op1TTKu2C6xb8CTNV0wmTlhjizHGabQ" target="_blank">
-    <img src="https://drive.google.com/uc?export=view&id=19Op1TTKu2C6xb8CTNV0wmTlhjizHGabQ" alt="Annotated 9" width="800"/>
-  </a>
+  <img src="https://www.dropbox.com/scl/fi/06pa59ekpreipu4d4ylbf/2613_annotated.png?raw=1" alt="Annotated 9" width="800"/>
 </p>
 
 ## Tech Stack
