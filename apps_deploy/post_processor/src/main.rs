@@ -7,8 +7,8 @@
 // 5: construction vehicle (Neon Aqua)
 // 6: tank               (Neon Orange)
 // 7: container lot      (Neon Blue-Green)
-use anyhow::Result;
 use ab_glyph::FontRef;
+use anyhow::Result;
 use image::{Rgb, RgbImage};
 use imageproc::drawing::draw_hollow_rect_mut;
 use imageproc::rect::Rect;
@@ -16,19 +16,19 @@ use serde::Deserialize;
 use std::fs::{self, File};
 use std::io::BufReader;
 use std::path::Path;
-use turbojpeg::{Compressor, Subsamp, PixelFormat, Image, OutputBuf};
 use tiff::decoder::{Decoder, DecodingResult};
+use turbojpeg::{Compressor, Image, OutputBuf, PixelFormat, Subsamp};
 
 // Neon color palette for 8 classes
 const NEON_COLORS: [Rgb<u8>; 8] = [
-    Rgb([255, 0, 128]),   // Neon Pink
-    Rgb([57, 255, 20]),   // Neon Green
-    Rgb([0, 255, 255]),   // Neon Cyan
-    Rgb([255, 255, 0]),   // Neon Yellow
-    Rgb([255, 0, 255]),   // Neon Magenta
-    Rgb([0, 255, 128]),   // Neon Aqua
-    Rgb([255, 110, 0]),   // Neon Orange
-    Rgb([0, 255, 200]),   // Neon Blue-Green
+    Rgb([255, 0, 128]), // Neon Pink
+    Rgb([57, 255, 20]), // Neon Green
+    Rgb([0, 255, 255]), // Neon Cyan
+    Rgb([255, 255, 0]), // Neon Yellow
+    Rgb([255, 0, 255]), // Neon Magenta
+    Rgb([0, 255, 128]), // Neon Aqua
+    Rgb([255, 110, 0]), // Neon Orange
+    Rgb([0, 255, 200]), // Neon Blue-Green
 ];
 
 // --- CONFIGURATION ---
@@ -39,7 +39,10 @@ const FONT_PATH: &str = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf";
 
 #[derive(Debug, Deserialize, Clone)]
 struct BBox {
-    x_min: f32, y_min: f32, x_max: f32, y_max: f32,
+    x_min: f32,
+    y_min: f32,
+    x_max: f32,
+    y_max: f32,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -84,8 +87,11 @@ fn process_map(json_path: &Path, font: &Option<FontRef>) -> Result<()> {
         println!("Image {} does not exist", image_path.display());
         return Ok(());
     }
-    
-    let tiff_id = image_path.file_stem().and_then(|s| s.to_str()).unwrap_or("unknown");
+
+    let tiff_id = image_path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("unknown");
 
     let file = File::open(&image_path)?;
     let mut decoder = Decoder::new(file)?;
@@ -128,7 +134,12 @@ fn process_map(json_path: &Path, font: &Option<FontRef>) -> Result<()> {
         let rgb_data: Vec<u8> = data.into_iter().flat_map(|p| vec![p, p, p]).collect();
         image::RgbImage::from_raw(width, height, rgb_data).unwrap()
     } else {
-        println!("Unexpected data length: expected {} or {}, got {}", size * 3, size, data.len());
+        println!(
+            "Unexpected data length: expected {} or {}, got {}",
+            size * 3,
+            size,
+            data.len()
+        );
         return Ok(());
     };
 
@@ -138,31 +149,30 @@ fn process_map(json_path: &Path, font: &Option<FontRef>) -> Result<()> {
         let mut w = (det.bbox.x_max - det.bbox.x_min).round() as u32;
         let mut h = (det.bbox.y_max - det.bbox.y_min).round() as u32;
 
-        if w == 0 { w = 1; }
-        if h == 0 { h = 1; }
-        if x < 0 { x = 0; }
-        if y < 0 { y = 0; }
-        if x as u32 + w > width { w = width.saturating_sub(x as u32).max(1); }
-        if y as u32 + h > height { h = height.saturating_sub(y as u32).max(1); }
+        if w == 0 {
+            w = 1;
+        }
+        if h == 0 {
+            h = 1;
+        }
+        if x < 0 {
+            x = 0;
+        }
+        if y < 0 {
+            y = 0;
+        }
+        if x as u32 + w > width {
+            w = width.saturating_sub(x as u32).max(1);
+        }
+        if y as u32 + h > height {
+            h = height.saturating_sub(y as u32).max(1);
+        }
 
         let color = NEON_COLORS[det.class_id % NEON_COLORS.len()];
         draw_hollow_rect_mut(&mut image, Rect::at(x, y).of_size(w, h), color);
     }
-    
-    let output_name = format!("{}_annotated.jpg", tiff_id);
-    let mut compressor = Compressor::new()?;
-    compressor.set_quality(95)?;
-    compressor.set_subsamp(Subsamp::None)?;
-    let tj_img = Image {
-        pixels: image.as_raw().as_slice(),
-        width: width as usize,
-        height: height as usize,
-        format: PixelFormat::RGB,
-        pitch: width as usize * 3,
-    };
 
-    let mut jpeg_data = OutputBuf::new_owned();
-    compressor.compress(tj_img, &mut jpeg_data)?;
-    fs::write(format!("{}/{}", OUTPUT_DIR, output_name), &jpeg_data)?;
+    let output_name = format!("{}_annotated.png", tiff_id);
+    image.save(format!("{}/{}", OUTPUT_DIR, output_name))?;
     Ok(())
 }
