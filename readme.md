@@ -19,74 +19,41 @@
 
 **SAMDEF** is a high-performance, modular monolith platform for Intelligence, Surveillance, and Reconnaissance (ISR) data processing at the edge. It is designed for real-time geospatial imagery analysis, object detection, and continuous model improvement, all running on-premise without reliance on cloud or SaaS infrastructure.
 
----
-
-## Folder Structure
-
-### apps_deploy
-
-```
-apps_deploy/
-├── [db_processor](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/db_processor)/
-│   ├── [docs](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/db_processor/docs)/
-│   │   ├── [plan.md](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/db_processor/docs/plan.md)
-│   │   └── [plan1.md](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/db_processor/docs/plan1.md)
-│   ├── [src](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/db_processor/src)/
-│   │   ├── [main.rs](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/db_processor/src/main.rs)
-│   │   └── [modules](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/db_processor/src/modules)/
-│   │       ├── [mod.rs](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/db_processor/src/modules/mod.rs)
-│   │       ├── [reader](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/db_processor/src/modules/reader)/
-│   │       ├── [schema](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/db_processor/src/modules/schema)/
-│   │       └── [writer](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/db_processor/src/modules/writer)/
-│   ├── [Cargo.toml](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/db_processor/Cargo.toml)
-│   └── [Cargo.lock](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/db_processor/Cargo.lock)
-├── [detector](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/detector)/
-│   ├── [docs](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/detector/docs)/
-│   │   ├── [architecture.md](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/detector/docs/architecture.md)
-│   │   └── [plan.md](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/detector/docs/plan.md)
-│   ├── [model](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/detector/model)/
-│   │   └── [best.onnx](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/detector/model/best.onnx)
-│   ├── [src](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/detector/src)/
-│   │   ├── [main.rs](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/detector/src/main.rs)
-│   │   └── [modules](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/detector/src/modules)/
-│   │       ├── [mod.rs](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/detector/src/modules/mod.rs)
-│   │       ├── [data](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/detector/src/modules/data)/
-│   │       ├── [io](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/detector/src/modules/io)/
-│   │       └── [processing](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/detector/src/modules/processing)/
-│   ├── [.aiexclude](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/detector/.aiexclude)
-│   ├── [Cargo.toml](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/detector/Cargo.toml)
-│   └── [Cargo.lock](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/detector/Cargo.lock)
-├── [post_processor](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/post_processor)/
-│   ├── [src](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_deploy/post_processor/src)/
-│   │   └── [main.rs](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/post_processor/src/main.rs)
-│   ├── [Cargo.toml](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/post_processor/Cargo.toml)
-│   └── [Cargo.lock](https://github.com/shatadalsamui/SAMDEF/blob/main/apps_deploy/post_processor/Cargo.lock)
-```
-
-### apps_training
-
-```
-apps_training/
-├── [ingestor](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/ingestor)/
-│   ├── [src](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/ingestor/src)/
-│   │   └── [modules](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/ingestor/src/modules)/
-├── [yolo_model_trainer](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/yolo_model_trainer)/
-│   ├── [build](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/yolo_model_trainer/build)/
-│   ├── [src](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/yolo_model_trainer/src)/
-│   │   ├── [cortex](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/yolo_model_trainer/src/cortex)/
-│   │   ├── [models](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/yolo_model_trainer/src/models)/
-│   │   ├── [samdef_brain.egg-info](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/yolo_model_trainer/src/samdef_brain.egg-info)/
-│   │   ├── [utils](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/yolo_model_trainer/src/utils)/
-│   │   └── [SAMDEF_ISR](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/yolo_model_trainer/src/SAMDEF_ISR)/
-│   ├── [venv](https://github.com/shatadalsamui/SAMDEF/tree/main/apps_training/yolo_model_trainer/venv)/
-```
-
----
-
 - **Deployment modules** handle live GeoTIFF image processing, object detection, and visualization.
 - **Training modules** manage data preparation and model training to enhance detection accuracy.
 
----
+## Folder Structure
+### apps_deploy
+```
+apps_deploy/
+├── db_processor/
+│   ├── docs/
+│   ├── src/
+│   │   └── modules/
+├── detector/
+│   ├── docs/
+│   ├── model/
+│   ├── src/
+│   │   └── modules/
+├── post_processor/
+│   ├── src/
+```
+### apps_training
+```
+apps_training/
+├── ingestor/
+│   ├── src/
+│   │   └── modules/
+├── yolo_model_trainer/
+│   ├── build/
+│   ├── src/
+│   │   ├── cortex/
+│   │   ├── models/
+│   │   ├── samdef_brain.egg-info/
+│   │   ├── utils/
+│   │   └── SAMDEF_ISR/
+│   ├── venv/
+````
 
 ## Architecture
 
@@ -204,6 +171,4 @@ The SAMDEF workflow consists of two main phases: **training** and **deployment**
 
 ## License
 
-This project is **proprietary software**. All rights reserved. No part of this software may be used, reproduced, or distributed without explicit written permission from the copyright holder.
-
----
+This project is **proprietary software
