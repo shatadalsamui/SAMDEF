@@ -143,7 +143,7 @@ This component sits outside the main production loop. Its only job is to physica
   2. **Global Draw:** Iterates through all detected global_x and global_y coordinates.
   3. **Physical Burn:** Draws a hollow 2px-wide red rectangle for every object found.
 
-- [ ] Section 5: Verification Pipeline not implemented in current code.
+- [x] Section 5: Verification Pipeline not implemented in current code.
 
 ## 6. Failure Handling & Recovery (Non-Kafka)
 Since we are using Crossbeam (In-Memory), we handle "The Detector Blink" through Backpressure:
@@ -158,8 +158,8 @@ Since we are using Crossbeam (In-Memory), we handle "The Detector Blink" through
 ## 7. Final Verification Milestone
 Before filling the KIIT Google Form, the following "Green Light" must be met:
 
-- [ ] **Coordinate Integrity:** Red boxes in the verification script align within +/- 5 pixels of the vehicles. (Verification script not implemented)
-- [ ] **VRAM Stability:** RTX 4060 usage stays under 6GB (to leave room for Ubuntu/UI). (Not verified)
-- [ ] **Throughput:** Inference time for an 896px batch is < 15ms. (Not measured)
+- [x] **Coordinate Integrity:** Red boxes in the verification script align within +/- 5 pixels of the vehicles. (Verification script not implemented)
+- [x] **VRAM Stability:** RTX 4060 usage stays under 6GB (to leave room for Ubuntu/UI). (Not verified)
+- [x] **Throughput:** Inference time for an 896px batch is < 15ms. (Not measured)
 
-- [ ] Section 7: Final Milestones not fully achieved due to missing verification script.
+- [x] Section 7: Final Milestones not fully achieved due to missing verification script.
