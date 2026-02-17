@@ -152,6 +152,54 @@ The SAMDEF workflow consists of two main phases: **training** and **deployment**
 
 Below is a table of clickable links to the original and annotated images, shown side by side for easy comparison.
 To view the images at full size, right-click the link and select "Open link in new tab."
+//here 
+
+Below are embedded examples, with each original image shown above its annotated version for visual comparison.
+
+**Original:**  
+![Original 1](https://github.com/user-attachments/assets/54814e69-bf21-4d35-a38e-388d21318b8a)  
+**Annotated:**  
+![Annotated 1](https://github.com/user-attachments/assets/043f6e17-e39d-4ae6-8a7e-58a6a7a5526f)
+
+**Original:**  
+![Original 2](https://github.com/user-attachments/assets/20080ec0-0b25-4d79-b0cf-df864cb38dd9)  
+**Annotated:**  
+![Annotated 2](https://github.com/user-attachments/assets/05149a35-b828-4406-80e6-0756eb2dd9cb)
+
+**Original:**  
+![Original 3](https://github.com/user-attachments/assets/3ef1faf1-ef82-4899-8410-2dab9540be48)  
+**Annotated:**  
+![Annotated 3](https://github.com/user-attachments/assets/c3b00124-880d-4dc7-9882-73075440fba4)
+
+**Original:**  
+![Original 4](https://github.com/user-attachments/assets/930f3e0b-d8a8-461f-b548-41676348023f)  
+**Annotated:**  
+![Annotated 4](https://github.com/user-attachments/assets/f0286cb1-0d41-426f-9686-7657690b6093)
+
+**Original:**  
+![Original 5](https://github.com/user-attachments/assets/22ed6be8-89ce-4acb-bee6-80c63678a4f6)  
+**Annotated:**  
+![Annotated 5](https://github.com/user-attachments/assets/6e16d846-b21c-4bfd-9f80-1a5c91acf36c)
+
+**Original:**  
+![Original 6](https://github.com/user-attachments/assets/43e28f72-6fac-41b3-9cfd-7a646be6f72b)  
+**Annotated:**  
+![Annotated 6](https://github.com/user-attachments/assets/f079e294-f0ec-4359-b348-f892db6da3a9)
+
+**Original:**  
+![Original 7](https://github.com/user-attachments/assets/b8107134-cdbc-42d8-a8bd-3bc38ca4f260)  
+**Annotated:**  
+![Annotated 7](https://github.com/user-attachments/assets/9a4aab6d-e213-40d1-a018-6eadb2785555)
+
+**Original:**  
+![Original 8](https://github.com/user-attachments/assets/c22881fe-d039-4c0a-9ae8-02d21c89dda7)  
+**Annotated:**  
+![Annotated 8](https://github.com/user-attachments/assets/6a3e8fac-58a9-4355-b7bf-759738dafa88)
+
+**Original:**  
+![Original 9](https://github.com/user-attachments/assets/33254737-a98b-4864-aad7-f40de5a5a4a5)  
+**Annotated:**  
+![Annotated 9](https://github.com/user-attachments/assets/65f445cc-5e49-4bfe-b774-223ad82283d1)
 
 | Original Image | Annotated Image |
 |---|---|
