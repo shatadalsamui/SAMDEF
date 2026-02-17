@@ -150,10 +150,6 @@ The SAMDEF workflow consists of two main phases: **training** and **deployment**
 ---
 ## Inference Examples
 
-Below is a table of clickable links to the original and annotated images, shown side by side for easy comparison.
-To view the images at full size, right-click the link and select "Open link in new tab."
-//here 
-
 Below are embedded examples, with each original image shown above its annotated version for visual comparison.
 
 **Original:**  
@@ -200,6 +196,9 @@ Below are embedded examples, with each original image shown above its annotated 
 ![Original 9](https://github.com/user-attachments/assets/33254737-a98b-4864-aad7-f40de5a5a4a5)  
 **Annotated:**  
 ![Annotated 9](https://github.com/user-attachments/assets/65f445cc-5e49-4bfe-b774-223ad82283d1)
+
+Below is a table of clickable links to the original and annotated images, shown side by side for easy comparison.
+To view the images at full size, right-click the link and select "Open link in new tab."
 
 | Original Image | Annotated Image |
 |---|---|
