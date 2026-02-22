@@ -3,6 +3,7 @@ use rayon::prelude::*;
 use serde::Serialize;
 use std::cmp::Ordering;
 use std::collections::HashMap;
+use half::f16;
 
 #[derive(Debug, Clone, Copy, Serialize)]
 pub struct BoundingBox {
@@ -119,7 +120,7 @@ pub fn non_maximum_suppression(detections: &mut Vec<Detection>, iou_threshold: f
 
 /// Parses the Raw Output from the ONNX Model
 /// Format: [Batch, 1000, 6] -> [x_min, y_min, x_max, y_max, confidence, class_id]
-pub fn parse_output(output: ArrayView2<f32>) -> Vec<Detection> {
+pub fn parse_output(output: ArrayView2<f16>) -> Vec<Detection> {
     let mut detections = Vec::new();
     const IMG_SIZE: f32 = 896.0;
     const MAX_COORD: f32 = IMG_SIZE - 1.0;

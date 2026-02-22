@@ -1,6 +1,7 @@
 use anyhow::Result;
-use ndarray::Array;
+use ndarray::{Array4,Ix4};
 use ort::session::Session;
+use half::f16;
 
 use crate::modules::processing::post_processing::Detection;
 use crate::modules::data::task::InferenceTask;
@@ -13,7 +14,7 @@ pub fn process_batch(
     
     // Preprocess
     let input_data = crate::modules::processing::pre_processing::preprocess_batch(batch)?;
-    let input_tensor = Array::from_shape_vec(ndarray::IxDyn(&[batch_len, 3, 896, 896]), input_data)?;
+    let input_tensor = Array4::<f16>::from_shape_vec((batch_len, 3, 896, 896), input_data)?;
 
     // Inference
     let outputs = crate::modules::processing::inference::run_inference(session, input_tensor)?;
