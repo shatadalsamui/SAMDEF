@@ -1,9 +1,9 @@
+use half::f16;
 use ndarray::ArrayView2;
 use rayon::prelude::*;
 use serde::Serialize;
 use std::cmp::Ordering;
 use std::collections::HashMap;
-use half::f16;
 
 #[derive(Debug, Clone, Copy, Serialize)]
 pub struct BoundingBox {
@@ -129,23 +129,15 @@ pub fn parse_output(output: ArrayView2<f16>) -> Vec<Detection> {
     const CLASS_THRESHOLDS: [f32; 8] = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1];
 
     for proposal in output.rows() {
-        // Raw values: [v0, v1, v2, v3, confidence, class_id]
-        let v0 = proposal[0].to_f32();
-        let v1 = proposal[1].to_f32();
-        let v2 = proposal[2].to_f32();
-        let v3 = proposal[3].to_f32();
-        let confidence = proposal[4].to_f32(); // Already a probability
+        let confidence = proposal[4].to_f32();
         let class_id = proposal[5].to_f32() as usize;
 
         if class_id < CLASS_THRESHOLDS.len() && confidence > CLASS_THRESHOLDS[class_id] {
-            // Force direct pixel usage and remove normalization heuristic
-            let (mut x_min, mut y_min, mut x_max, mut y_max) = (v0, v1, v2, v3);
+            let x_min = proposal[0].to_f32().clamp(0.0, MAX_COORD);
+            let y_min = proposal[1].to_f32().clamp(0.0, MAX_COORD);
+            let mut x_max = proposal[2].to_f32().clamp(0.0, MAX_COORD);
+            let mut y_max = proposal[3].to_f32().clamp(0.0, MAX_COORD);
 
-            // Clamp to tile bounds and enforce a minimum 1px extent to reduce corner drift.
-            x_min = x_min.clamp(0.0, MAX_COORD);
-            y_min = y_min.clamp(0.0, MAX_COORD);
-            x_max = x_max.clamp(0.0, MAX_COORD);
-            y_max = y_max.clamp(0.0, MAX_COORD);
             if x_max <= x_min {
                 x_max = (x_min + 1.0).min(MAX_COORD);
             }

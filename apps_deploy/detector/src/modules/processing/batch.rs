@@ -1,5 +1,5 @@
 use anyhow::Result;
-use ndarray::{Array4,Ix4};
+use ndarray::{Array4};
 use ort::session::Session;
 use half::f16;
 

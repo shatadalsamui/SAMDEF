@@ -1,6 +1,6 @@
 use anyhow::Result;
 use half::f16;
-use ndarray::{Array, ArrayD};
+use ndarray::{Array};
 use ort::{inputs, session::Session, value::Value};
 
 pub fn run_inference(
