@@ -130,12 +130,12 @@ pub fn parse_output(output: ArrayView2<f16>) -> Vec<Detection> {
 
     for proposal in output.rows() {
         // Raw values: [v0, v1, v2, v3, confidence, class_id]
-        let v0 = proposal[0];
-        let v1 = proposal[1];
-        let v2 = proposal[2];
-        let v3 = proposal[3];
-        let confidence = proposal[4]; // Already a probability
-        let class_id = proposal[5] as usize;
+        let v0 = proposal[0].to_f32();
+        let v1 = proposal[1].to_f32();
+        let v2 = proposal[2].to_f32();
+        let v3 = proposal[3].to_f32();
+        let confidence = proposal[4].to_f32(); // Already a probability
+        let class_id = proposal[5].to_f32() as usize;
 
         if class_id < CLASS_THRESHOLDS.len() && confidence > CLASS_THRESHOLDS[class_id] {
             // Force direct pixel usage and remove normalization heuristic
