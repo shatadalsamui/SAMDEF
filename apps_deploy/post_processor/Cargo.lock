@@ -872,6 +872,7 @@ dependencies = [
  "anyhow",
  "image",
  "imageproc",
+ "rayon",
  "serde",
  "serde_json",
  "tiff",

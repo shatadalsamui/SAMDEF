@@ -9,7 +9,7 @@ use modules::data::task::PipelineMessage;
 use modules::io::consumer::run_consumer;
 use modules::io::producer::run_producer;
 
-const BATCH_SIZE: usize = 32;
+const BATCH_SIZE: usize = 64;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -18,7 +18,7 @@ async fn main() -> Result<()> {
 
     let input_dir = PathBuf::from("/home/shatadal/SAMDEF_DATA/val_images");
     let output_dir = PathBuf::from("/home/shatadal/SAMDEF/raw_data/inference/results");
-    let model_path = PathBuf::from("/home/shatadal/SAMDEF/apps_deploy/detector/model/best.onnx");
+    let model_path = PathBuf::from("/home/shatadal/SAMDEF/apps_deploy/detector/model/best_fp16_patched.onnx");
 
     fs::create_dir_all(&output_dir)?;
 

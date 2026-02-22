@@ -12,10 +12,12 @@ use anyhow::Result;
 use image::{Rgb, RgbImage};
 use imageproc::drawing::draw_hollow_rect_mut;
 use imageproc::rect::Rect;
+use rayon::prelude::*;
 use serde::Deserialize;
 use std::fs::{self, File};
 use std::io::BufReader;
 use std::path::Path;
+use std::time::Instant;
 use tiff::decoder::{Decoder, DecodingResult};
 use turbojpeg::{Compressor, Image, OutputBuf, PixelFormat, Subsamp};
 
@@ -65,16 +67,22 @@ fn main() -> Result<()> {
     let font_data = fs::read(FONT_PATH).unwrap_or_else(|_| Vec::new());
     let font = FontRef::try_from_slice(&font_data).ok();
 
-    for entry in fs::read_dir(JSON_DIR)? {
-        let entry = entry?;
+    let entries: Vec<_> = fs::read_dir(JSON_DIR)?.filter_map(|e| e.ok()).collect();
+
+    let start = Instant::now();
+
+    entries.par_iter().for_each(|entry| {
         let path = entry.path();
         if path.to_string_lossy().ends_with("_results.json") {
             if let Err(e) = process_map(&path, &font) {
                 eprintln!("Error processing map for {:?}: {}", path, e);
             }
         }
-    }
+    });
+
+    let duration = start.elapsed();
     println!(" Done. Check: {}", OUTPUT_DIR);
+    println!("Total annotation time: {:.2?}", duration);
     Ok(())
 }
 

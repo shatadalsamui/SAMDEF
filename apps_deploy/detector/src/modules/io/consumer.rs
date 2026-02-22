@@ -14,7 +14,7 @@ use tokio::task::JoinSet;
 
 // Strict batch size for greedy mixed batching.
 // Always process in batches of 32 for maximum GPU utilization.
-const BATCH_SIZE: usize = 32;
+const BATCH_SIZE: usize = 64;
 
 // Track the state of each file individually
 struct FileState {
@@ -44,7 +44,7 @@ pub async fn run_consumer(
     // GPU idle timer: total time spent waiting for data
     let mut total_idle_duration = std::time::Duration::default();
 
-    // Main consumer loop: Greedily accumulate tiles into batches of 42.
+    // Main consumer loop: Greedily accumulate tiles into batches of 64.
     loop {
         let start_wait = std::time::Instant::now();
         let msg = match task_rx.recv() {
