@@ -1010,6 +1010,7 @@ checksum = "6ea2d84b969582b4b1864a92dc5d27cd2b77b622a8d79306834f1be5ba20d84b"
 dependencies = [
  "cfg-if",
  "crunchy",
+ "serde",
  "zerocopy",
 ]
 
@@ -2671,6 +2672,7 @@ dependencies = [
  "crossbeam",
  "env_logger",
  "gdal",
+ "half",
  "image",
  "log",
  "ndarray",
