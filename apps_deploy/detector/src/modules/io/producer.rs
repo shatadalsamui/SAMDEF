@@ -6,7 +6,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::thread; // Use OS threads instead of Rayon
 
-const PRODUCER_PARALLELISM: usize = 8; // Read n TIFFs at once
+const PRODUCER_PARALLELISM: usize = 16; // Read n TIFFs at once
 
 pub fn run_producer(input_dir: PathBuf, task_tx: channel::Sender<PipelineMessage>) -> Result<()> {
     // 1. Collect and Sort Paths

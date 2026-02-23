@@ -18,8 +18,7 @@ use std::fs::{self, File};
 use std::io::BufReader;
 use std::path::Path;
 use std::time::Instant;
-use tiff::decoder::{Decoder, DecodingResult};
-use turbojpeg::{Compressor, Image, OutputBuf, PixelFormat, Subsamp};
+use tiff::decoder::Decoder;
 
 // Neon color palette for 8 classes
 const NEON_COLORS: [Rgb<u8>; 8] = [

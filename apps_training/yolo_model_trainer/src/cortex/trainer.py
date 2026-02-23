@@ -3,6 +3,7 @@ import sys
 import torch
 from ultralytics import YOLO
 
+
 def run_training():
     #HARDWARE
     if not torch.cuda.is_available():

@@ -1,38 +1,48 @@
-# SAMDEF Brain Microservice: Quick Commands
+# SAMDEF YOLO Model Trainer
 
-## 1. Setup Python Virtual Environment
+## 1. Set up a Python virtual environment
+
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-## 2. Install Dependencies (from pyproject.toml)
+## 2. Install dependencies
+
 ```bash
 pip install .
 ```
 
-## 3. Download YOLOv26s Weights (if not present)
+## 3. Download YOLO weights
+
+If you do not have the YOLOv26s weights, run:
+
 ```bash
 python3 src/utils/download_weights.py
-# or manually if already downloaded:
-mv yolo11s.pt src/models/yolo11s.pt
 ```
 
-## 4. Start Training the YOLO Model
-Activate the virtual environment, navigate to the source directory, and run the training command:
+If you already have the weights, move them to the correct location:
+
+```bash
+mv yolo26s.pt src/models/yolo11s.pt
+```
+
+## 4. Train the YOLO model
+
+Activate your virtual environment, go to the source directory, and run:
+
 ```bash
 source venv/bin/activate
 cd src
 python3 main.py train
 ```
-This will:
-- Run system diagnostics (GPU check, data verification).
-- Load the YOLO26s model.
-- Train for 300 epochs on your tiled xView data.
-- Save results to `SAMDEF_Satellite_Ops/Run6_HighDef_100Epochs/`.
 
-## 5. Export PyTorch Model to ONNX
-After training, export your best model to ONNX format for ONNX Runtime:
+This will check your system, load the model, and start training.
+
+## 5. Export the trained model to ONNX
+
+After training, export your best model to ONNX format:
+
 ```bash
 yolo export model=/home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run14/weights/best.pt format=onnx half=True opset=17 simplify=True nms=True max_det=2000 dynamic=True
 ```
@@ -92,30 +102,6 @@ Use the final patched ONNX model (e.g., `best_fp16_io_patched.onnx`) in your inf
 
 ---
 
-**Summary Table**
 
-| Step | Command/Script | Purpose |
-|------|---------------|---------|
-| 1 | `yolo export ... half=True ...` | Export ONNX with FP16 weights |
-| 2 | Python IO patch | Set input/output nodes to FP16 |
-| 3 | Python Cast patch | Ensure output node produces FP16 |
-| 4 | Use patched model | End-to-end FP16 inference |
 
----
 
-## 6. (Future) Run Inference/Inference Mode
-```bash
-source venv/bin/activate
-cd src
-python3 main.py run
-```
-Placeholder for Kafka-based inference (to be implemented).
-
----
-
-### Notes
-- All commands are to be run from `apps/brain_python/src/` unless otherwise specified.
-- Training requires the data from the Rust Ingestor (`/home/shatadal/SAMDEF/raw_data/processed_tiles/data.yaml`).
-- Monitor progress in the terminal; checkpoints save every 10 epochs.
-- Stop training with `Ctrl+C` (graceful shutdown).
-- For individual testing, you can run `python3 cortex/trainer.py` directly.
