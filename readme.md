@@ -17,7 +17,7 @@
 
 ## Overview
 
-**SAMDEF** is a high-performance, modular monolith platform for Intelligence, Surveillance, and Reconnaissance (ISR) data processing at the edge. It is designed for real-time geospatial imagery analysis, object detection, and continuous model improvement, all running on-premise without reliance on cloud or SaaS infrastructure. The OODA (Observe–Orient–Decide–Act) loop is implemented and runs directly on edge laptops and desktops, enabling rapid, autonomous decision-making in the field.
+**SAMDEF** is a high-performance, modular monolith platform for Intelligence, Surveillance, and Reconnaissance (ISR) data processing at the edge. It is designed for huge geospatial imagery analysis, object detection, and continuous model improvement, all running on-premise without reliance on cloud or SaaS infrastructure. The platform accelerates the 'Observe' phase of the OODA loop by running a high-throughput analysis pipeline directly on edge laptops and desktops, enabling rapid tactical awareness in the field.
 
 - **Deployment modules** handle live GeoTIFF image processing, object detection, and visualization.
 - **Training modules** manage data preparation and model training to enhance detection accuracy.
