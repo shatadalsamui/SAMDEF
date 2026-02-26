@@ -25,15 +25,15 @@ This microservice is optimized for throughput and scalability, leveraging multi-
 ## 3. High-Level Architecture Diagram (Textual)
 
 ```
-+-------------------+      +-------------------+      +-------------------+      +-------------------+
-|                   |      |                   |      |                   |      |                   |
-|   Producer Thread | ---> |   Channel (Queue) | ---> |  Consumer Thread  | ---> |   Output/Publish  |
-|                   |      |                   |      |                   |      |                   |
-+-------------------+      +-------------------+      +-------------------+      +-------------------+
-        |                        |                           |                          |
-        |                        |                           |                          |
-        v                        v                           v                          v
-[Read GeoTIFFs]         [Batched PipelineMessages]   [Batch Inference, Aggregation]   [JSON, Zenoh]
++-------------------+      +-------------------+      +-------------------+      +-------------------+      +-------------------+      +-------------------+
+|                   |      |                   |      |                   |      |                   |      |                   |      |                   |
+|   Producer Thread | ---> |   Channel (Queue) | ---> |  Consumer Thread  | ---> |   Output/Publish  | ---> |   DB Processor    | ---> |   Rust Iced GUI   |
+|                   |      |                   |      |                   |      |                   |      |                   |      |                   |
++-------------------+      +-------------------+      +-------------------+      +-------------------+      +-------------------+      +-------------------+
+        |                        |                           |                          |                       |                          |
+        |                        |                           |                          |                       |                          |
+        v                        v                           v                          v                       v                          v
+[Read GeoTIFFs]         [Batched PipelineMessages]   [Batch Inference, Aggregation]   [JSON, Zenoh]      [Output to DB]           [Native GUI from DB]
 ```
 
 **Key Data Flow:**
