@@ -20,7 +20,16 @@
 **SAMDEF** is a high-performance, modular monolith platform designed for PED (Processing, Exploitation, and Dissemination) within the Intelligence, Surveillance, and Reconnaissance (ISR) framework. Optimized for the tactical edge, it enables high-throughput analysis of massive geospatial imagery and automated object detection directly on-premise, eliminating reliance on cloud or SaaS infrastructure.
 
 **Strategic Context & OODA/PED Alignment:**  
-The platform accelerates the Observe and Orient phases of the OODA loop by bridging the gap between raw sensor data and actionable intelligence. By automating the data-intensive groundwork—transforming raw pixels into a spatial grid of identified threats—SAMDEF acts as a high-speed scout. It provides operators with the critical "What" and "Where" through proprietary techniques such as Spatial Grid NMS and Multi-Class Tactical Categorization. This output serves as the primary information source for the broader Intelligence effort, allowing commanders and analysts to bypass manual imagery exploitation and focus on the Decide and Act phases with superior geospatial awareness.
+The platform accelerates the 'Observe' and 'Orient' phases of the OODA loop by bridging the gap between raw sensor data and actionable intelligence. By automating the data-intensive groundwork—transforming raw pixels into a spatial grid of identified threats—SAMDEF acts as a high-speed scout. It provides operators with the critical "What" and "Where" through techniques such as Spatial Grid NMS and Multi-Class Tactical Categorization. This output serves as the primary information source for the broader Intelligence effort, allowing commanders and analysts to focus on the Decide and Act phases with superior geospatial awareness.
+
+**The Observe Phase (Programmatic Scanning):**  
+SAMDEF automates the "Observe" stage by programmatically scanning massive GeoTIFFs that are far too large for manual human review. Its Zero-Wait GPU Pipeline ensures that while one batch of imagery is being analyzed, the next is already being pre-processed in memory, allowing for near-continuous observation of tactical areas.
+
+**The Orient Phase (Geospatial Contextualization):**  
+The system handles the "Orient" stage by converting raw detections into a structured tactical layout. By mapping every detected asset (e.g., Tank, Building, Vehicle) to its exact Global Geospatial Coordinates and suppressing duplicates via Spatial Grid NMS, it provides the operator with an instant, accurate understanding of the battlefield reality.
+
+**The Decide Phase (Intelligence Enablement):**  
+While the final command remains human-led, SAMDEF accelerates the "Decide" phase by generating automated Situation Reports (SITREPs). By delivering high-fidelity metadata and classified threat locations directly to the local database, it provides the essential intelligence needed to move from raw data to a decisive action in seconds rather than hours.
 
 - **Deployment modules** handle huge GeoTIFF image processing, object detection, and visualization.
 - **Training modules** manage data preparation and model training to enhance detection accuracy.
