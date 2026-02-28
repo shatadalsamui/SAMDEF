@@ -16,46 +16,55 @@ pub fn prepare_labels(labels: &[Label]) -> Vec<ParsedLabel> {
             let (xmin, ymin, xmax, ymax) = lbl.parse_bounds()?;
 
             let class_id = match lbl.properties.type_id {
-                // truck
-                19 => 0, // Bus
-                24 => 0, // Cargo Truck
-                26 => 0, // Truck Tractor
-                27 => 0, // Trailer
-                28 => 0, // Flatbed
+                // 0: Light Vehicle (Small Car, Passenger Car, Pickup)
+                17 | 18 | 20 => 0,
 
-                // boxy
-                21 => 1, // Utility Truck
-                23 => 1, // Truck
-                25 => 1, // Box Truck
-                29 => 1, // Liquid Truck
+                // 1: Boxy/Utility Truck (Utility Truck, Truck, Truck Tractor w/ Box Trailer)
+                21 | 23 | 25 => 1,
 
-                // car
-                17 => 2, // Passenger Car
-                18 => 2, // Small Car
-                20 => 2, // Pickup
+                // 2: Long Trucks (Bus, Cargo Truck, Tractor, Trailer, Flatbed, Liquid Tanker, Container)
+                19 | 24 | 26 | 27 | 28 | 29 | 91 => 2,
 
-                // building
-                73 => 3, // Building
+                // 3: Small Boats (Maritime Vessel, Motorboat, Sailboat, Tugboat, Fishing Vessel, Yacht)
+                40 | 41 | 42 | 44 | 47 | 50 => 3,
 
-                // container
-                91 => 4, // Container
+                // 4: Large Ships (Barge, Ferry, Container Ship, Oil Tanker)
+                45 | 49 | 51 | 52 => 4,
 
-                // construction
-                60 => 5, // Dump Truck
-                61 => 5, // Haul Truck
-                63 => 5, // Loader
-                64 => 5, // Excavator
-                65 => 5, // Mixer
+                // 5: Fixed-Wing Aircraft (Fixed-wing, Small Aircraft, Passenger/Cargo Plane)
+                11 | 12 | 13 => 5,
 
-                // tank
-                86 => 6, // Tank
+                // 6: Rotary-Wing Aircraft (Helicopter)
+                15 => 6,
 
-                // lot
-                89 => 7, // Container Lot
+                // 7: Building (ID 73 - Standalone rigid structures)
+                73 => 7,
 
-                _ => return None, 
+                // 8: Other Structures (Hut, Tent, Shed, Damaged Building, Facility)
+                71 | 72 | 76 | 77 => 8,
+
+                // 9: Storage Tank (Circular footprint)
+                86 => 9,
+
+                // 10: Shipping Container Lot (High-density grid of containers)
+                89 => 10,
+
+                // 11: Construction Site (Disturbed ground texture)
+                79 => 11,
+
+                // 12: Railway Assets (Locomotive and all rail car variants)
+                33 | 34 | 35 | 36 | 37 | 38 => 12,
+
+                // 13: Engineering & Construction Machinery (Cranes, Excavators, Mixers, etc.)
+                32 | 53 | 54 | 55 | 56 | 57 | 59 | 60 | 61 | 62 | 63 | 64 | 65 | 66 => 13,
+
+                // 14: Infrastructure Towers (Pylon, Telecom Tower)
+                93 | 94 => 14,
+
+                // Removed/Ignored: Aircraft Hangar (74), Helipad (84), Dam (moved/removed), Vehicle Lot (83)
+                _ => return None,
             };
-            
+
             Some(ParsedLabel {
                 class_id,
                 xmin,
