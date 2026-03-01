@@ -24,7 +24,7 @@ python3 src/utils/download_weights.py
 If you already have the weights, move them to the correct location:
 
 ```bash
-mv yolo26s.pt src/models/yolo11s.pt
+mv yolo26s.pt src/models/yolo26s.pt
 ```
 
 ## 4. Train the YOLO model
@@ -101,7 +101,3 @@ print("Patched model saved as", patched_path)
 Use the final patched ONNX model (e.g., `best_fp16_io_patched.onnx`) in your inference pipeline.
 
 ---
-
-
-
-

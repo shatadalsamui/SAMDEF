@@ -33,6 +33,25 @@ While the final command remains human-led, SAMDEF accelerates the "Decide" phase
 
 - **Deployment modules** handle huge GeoTIFF image processing, object detection, and visualization.
 - **Training modules** manage data preparation and model training to enhance detection accuracy.
+- 
+### Inference Timing Results (YOLO26s, FP16)
+
+- **Dataset:** 281 images (~3000×3000 pixels each, 0.3m GSD)
+- **Total area:** 227.61 km²
+- **Batch size:** 32
+
+| Provider | Model         | Total Time (sec) | Time per km² (sec) | Notes                        |
+|----------|--------------|------------------|--------------------|------------------------------|
+| GPU      | YOLO26s FP16 | 70               | 0.31               | RTX 4060, full FP16 accel    |
+| CPU      | YOLO26s FP16 | 1126             | 4.95               | i9-13900HX, FP16 emulated    |
+
+**Specs:** i9-13900HX, 24GB RAM, RTX 4060  
+**Dataset:** 281 images, 3000×3000 px, 0.3m GSD, 227.61 km² total
+
+- **Interpretation:**  
+  - CPU is ~16x slower than GPU for this workload, which matches expectations for FP16 emulation on a high-end CPU.
+  - Time per km² is a useful metric for scaling to larger areas or comparing with other systems.
+  - Both CPU and GPU performance are strong for a lightweight model like YOLO26s.
 
 ## Inference Examples
 

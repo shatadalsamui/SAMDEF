@@ -2,6 +2,7 @@ use crate::modules::data::results::process_single_image;
 use crate::modules::data::task::{InferenceTask, PipelineMessage};
 use crate::modules::io::publisher::ZenohPublisher;
 use crate::modules::io::session::initialize_session;
+use crate::modules::io::session::ExecutionProvider;
 use crate::modules::processing::batch::process_batch;
 use crate::modules::processing::post_processing::Detection;
 use anyhow::Result;
@@ -33,7 +34,10 @@ pub async fn run_consumer(
     model_path: PathBuf,
     output_dir: PathBuf,
 ) -> Result<()> {
-    let mut session = initialize_session(&model_path)?;
+    //config for cpu and gpu , use as per specs
+    let mut session = initialize_session(&model_path, ExecutionProvider::Cpu)?;
+    // let mut session = initialize_session(&model_path, ExecutionProvider::Cuda { device_id: 0 })?;
+
     let mut batch = Vec::with_capacity(BATCH_SIZE);
 
     // State Tracker: Key = Canonicalized Filename
