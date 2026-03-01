@@ -15,7 +15,7 @@ use tokio::task::JoinSet;
 
 // Strict batch size for greedy mixed batching.
 // Always process in batches of 32 for maximum GPU utilization.
-const BATCH_SIZE: usize = 32;
+const BATCH_SIZE: usize = 4;
 
 // Track the state of each file individually
 struct FileState {
