@@ -35,7 +35,7 @@ def run_training():
     results = model.train(
         data=data_yaml,
         epochs=100,
-        imgsz=1248,
+        imgsz=1152,
         batch=2,
         nbs=64,
         
@@ -62,10 +62,10 @@ def run_training():
         shear=0.0,
         perspective=0.0,
         
-        copy_paste=0.30,
+        copy_paste=0.40,
         close_mosaic=30,
         
-        workers=8,
+        workers=4,
         plots=False,
         save=True,
         save_period=10,
