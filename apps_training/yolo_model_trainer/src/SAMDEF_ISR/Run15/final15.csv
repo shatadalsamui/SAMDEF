@@ -1,0 +1,24 @@
+Validating /home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run15/weights/best.pt...
+Ultralytics 8.4.19 🚀 Python-3.12.3 torch-2.10.0+cu128 CUDA:0 (NVIDIA GeForce RTX 4060 Laptop GPU, 7808MiB)
+YOLO26s summary (fused): 122 layers, 9,470,985 parameters, 0 gradients, 20.6 GFLOPs
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 323/323 16.3it/s 19.8s
+                   all       1289     127500       0.55      0.427      0.442      0.241
+         Light-Vehicle        697      50191      0.713      0.783       0.77      0.349
+            Boxy-Truck        542       4851      0.512      0.402      0.425      0.227
+           Long-Trucks        502       4820      0.473       0.35      0.363       0.18
+            Small-Boat         84        748      0.629      0.683       0.65      0.331
+            Large-Ship         80        315      0.479      0.302       0.36      0.193
+            Fixed-Wing         74        200      0.872      0.714      0.803      0.462
+            Helicopter          4          5      0.277        0.2      0.197      0.122
+              Building        783      60680      0.583      0.655      0.635      0.328
+       Other-Structure        323        936       0.48      0.106      0.141      0.082
+          Storage-Tank         78        407      0.719      0.369      0.468      0.271
+         Container-Lot         70        596      0.277      0.331      0.181     0.0884
+     Construction-Site        154       1572      0.133    0.00191    0.00833    0.00283
+               Railway         24        586       0.76      0.691      0.712      0.428
+ Engineering-Machinery        264       1433      0.537      0.426      0.457       0.26
+           Tower-Pylon         94        160      0.802      0.388      0.452      0.295
+Speed: 0.6ms preprocess, 9.9ms inference, 0.0ms loss, 0.1ms postprocess per image
+--------------------------------------------------
+RUN COMPLETE
+Weights: /home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run15/weights/best.pt

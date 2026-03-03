@@ -16,7 +16,7 @@ def run_training():
 
     # CONFIGURATION
     model_name = (
-        "/home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/models/yolo26s.pt"
+        "/home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run15/weights/last.pt"
     )
     data_yaml = "/home/shatadal/SAMDEF/raw_data/processed_tiles/data.yaml"
     project_name = (
@@ -77,7 +77,7 @@ def run_training():
         exist_ok=True,
         verbose=True,
         device=device,
-        resume=False,  # Must be False to apply new schedule
+        resume=True,  # Must be False to apply new schedule
     )
 
     print("-" * 50)

@@ -1,6 +1,6 @@
 task: detect
 mode: train
-model: /home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/models/yolo26s.pt
+model: /home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run15/weights/last.pt
 data: /home/shatadal/SAMDEF/raw_data/processed_tiles/data.yaml
 epochs: 100
 time: null
@@ -24,7 +24,7 @@ single_cls: false
 rect: false
 cos_lr: true
 close_mosaic: 30
-resume: false
+resume: /home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run15/weights/last.pt
 amp: true
 fraction: 1.0
 profile: false
