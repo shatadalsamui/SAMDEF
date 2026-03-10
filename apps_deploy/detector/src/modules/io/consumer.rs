@@ -15,7 +15,7 @@ use tokio::task::JoinSet;
 
 // Strict batch size for greedy mixed batching.
 // Always process in batches of 32 for maximum GPU utilization.
-const BATCH_SIZE: usize = 4;
+const BATCH_SIZE: usize = 32;
 
 // Track the state of each file individually
 struct FileState {
@@ -36,7 +36,7 @@ pub async fn run_consumer(
 ) -> Result<()> {
     //config for cpu and gpu , use as per specs
     let mut session = initialize_session(&model_path, ExecutionProvider::Cpu)?;
-    // let mut session = initialize_session(&model_path, ExecutionProvider::Cuda { device_id: 0 })?;
+    //let mut session = initialize_session(&model_path, ExecutionProvider::Cuda { device_id: 0 })?;
 
     let mut batch = Vec::with_capacity(BATCH_SIZE);
 

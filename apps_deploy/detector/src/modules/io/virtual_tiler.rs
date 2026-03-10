@@ -11,18 +11,22 @@ const STRIDE: usize = 716;
 
 /// Streaming mode: send PipelineMessage::Process for each tile
 pub fn process_geotiff(source_path_str: &str, msg_sender: Sender<PipelineMessage>) -> Result<()> {
-    let path = Path::new(source_path_str);
+    let clean_path_str = source_path_str
+        .trim_matches(|c| c == '"' || c == '\'' || c == '\n' || c == '\r' || c == ' ');
+    let path = Path::new(clean_path_str);
     info!("Processing GeoTIFF (streaming): {:?}", path);
 
     // Canonicalize the source path for consistency
     let canonical_path = match path.canonicalize() {
         Ok(p) => p.to_string_lossy().to_string(),
-        Err(_) => source_path_str.to_string(),
+        Err(_) => clean_path_str.to_string(),
     };
 
     let dataset = Dataset::open(path)?;
     let (width, height) = dataset.raster_size();
-    let geo_transform = dataset.geo_transform()?;
+    let geo_transform = dataset
+        .geo_transform()
+        .unwrap_or([0.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
 
     let band1 = dataset.rasterband(1)?; // R
     let band2 = dataset.rasterband(2)?; // G
