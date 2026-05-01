@@ -59,7 +59,7 @@ Thumbs.db
 *.swo
 
 # Inference example images
-inference_examples/*.png
+inference_examples/**
 
 # Gemini file
 Gemini.md
