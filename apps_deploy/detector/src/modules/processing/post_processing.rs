@@ -20,7 +20,7 @@ pub struct Detection {
     pub confidence: f32,
 }
 
-/// Helper: Calculate Intersection over Union (IoU)
+/// Calculate Intersection over Union (IoU)
 fn calculate_iou(box_a: &BoundingBox, box_b: &BoundingBox) -> f32 {
     let x_a = box_a.x_min.max(box_b.x_min);
     let y_a = box_a.y_min.max(box_b.y_min);
@@ -40,7 +40,7 @@ fn calculate_iou(box_a: &BoundingBox, box_b: &BoundingBox) -> f32 {
     }
 }
 
-/// Effectively O(n) Spatial Grid NMS with 3x3 Neighborhood Overlap
+/// O(n) Spatial Grid NMS with 3x3 Neighborhood Overlap
 pub fn non_maximum_suppression(detections: &mut Vec<Detection>, iou_threshold: f32) {
     use rayon::prelude::*;
     use std::cmp::Ordering;
@@ -85,6 +85,7 @@ pub fn non_maximum_suppression(detections: &mut Vec<Detection>, iou_threshold: f
             }
 
             // 4. Run NMS with 3x3 Neighborhood Search
+            // Main loop: iterates over each detection (n times)
             for i in 0..n {
                 if suppressed[i] {
                     continue;
@@ -95,10 +96,12 @@ pub fn non_maximum_suppression(detections: &mut Vec<Detection>, iou_threshold: f
                 let gx = (current_det.bbox.x_min / GRID_SIZE).floor() as i32;
                 let gy = (current_det.bbox.y_min / GRID_SIZE).floor() as i32;
 
-                // Check 3x3 neighborhood (9 cells) to handle overlaps/boundaries
+                // First nested loop: iterate over neighbor x (3 times)
                 for nx in (gx - 1)..=(gx + 1) {
+                    // Second nested loop: iterate over neighbor y (3 times)
                     for ny in (gy - 1)..=(gy + 1) {
                         if let Some(indices) = grid.get(&(nx, ny)) {
+                            // Third nested loop: iterate over detections in this grid cell (k times, usually small)
                             for &j in indices {
                                 // Only check lower-confidence boxes that aren't already suppressed
                                 if j > i && !suppressed[j] {

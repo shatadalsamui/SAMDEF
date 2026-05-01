@@ -35,16 +35,16 @@ def run_training():
     results = model.train(
         data=data_yaml,
         epochs=100,
-        imgsz=1152,
+        imgsz=896,
         batch=2,
-        nbs=64,
+        nbs=64, # nominal batch size
         
-        amp=True,
+        amp=True, # Automatic Mixed Precision 
         cache=False,
         max_det=2000,
-        optimizer="MuSGD",
-        lr0=0.01,
-        lrf=0.01,
+        optimizer="MuSGD", # Muon SGD inspired from moonshot ai
+        lr0=0.01, # initial learning rate
+        lrf=0.01, # final learning factor
         momentum=0.937,
         weight_decay=0.0005,
         cos_lr=True,

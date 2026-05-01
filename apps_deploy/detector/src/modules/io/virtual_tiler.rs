@@ -7,33 +7,35 @@ use std::path::Path;
 use crate::modules::data::task::{InferenceTask, PipelineMessage};
 
 const TILE_SIZE: usize = 896;
-const STRIDE: usize = 716;
+const STRIDE: usize = 716; // ~ 20 percent overlap
 
-/// Streaming mode: send PipelineMessage::Process for each tile
+///  send PipelineMessage::Process for each tile
 pub fn process_geotiff(source_path_str: &str, msg_sender: Sender<PipelineMessage>) -> Result<()> {
+    // makes the images file path usable
     let clean_path_str = source_path_str
         .trim_matches(|c| c == '"' || c == '\'' || c == '\n' || c == '\r' || c == ' ');
     let path = Path::new(clean_path_str);
     info!("Processing GeoTIFF (streaming): {:?}", path);
 
-    // Canonicalize the source path for consistency
+    // canonicalize the source path of the image for consistency
     let canonical_path = match path.canonicalize() {
         Ok(p) => p.to_string_lossy().to_string(),
         Err(_) => clean_path_str.to_string(),
     };
 
+    // open the image as dataset using the gdal library
     let dataset = Dataset::open(path)?;
     let (width, height) = dataset.raster_size();
     let geo_transform = dataset
         .geo_transform()
-        .unwrap_or([0.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
+        .unwrap_or([0.0, 1.0, 0.0, 0.0, 0.0, 1.0]);// get the spatial meta data
 
     let band1 = dataset.rasterband(1)?; // R
     let band2 = dataset.rasterband(2)?; // G
     let band3 = dataset.rasterband(3)?; // B
 
+    //iterates over the image for each tile and read the R G B data and converts them into a single array
     let mut tile_count = 0;
-
     let mut y = 0;
     while y < height {
         let mut x = 0;
@@ -49,7 +51,7 @@ pub fn process_geotiff(source_path_str: &str, msg_sender: Sender<PipelineMessage
                 tile_y = height - TILE_SIZE;
             }
 
-            let window_offset = (tile_x as isize, tile_y as isize);
+            let window_offset = (tile_x as isize, tile_y as isize);// for position of the tile in the image
             let window_size = (TILE_SIZE, TILE_SIZE);
             let buffer_size = (TILE_SIZE, TILE_SIZE);
 
@@ -57,7 +59,7 @@ pub fn process_geotiff(source_path_str: &str, msg_sender: Sender<PipelineMessage
             let g_buffer = band2.read_as::<u8>(window_offset, window_size, buffer_size, None)?;
             let b_buffer = band3.read_as::<u8>(window_offset, window_size, buffer_size, None)?;
 
-            // Optimized: Pre-allocate and fill interleaved_data for zero-overhead
+            // Pre-allocate and fill interleaved_data for zero-overhead
             let len = TILE_SIZE * TILE_SIZE;
             let mut interleaved_data = vec![0u8; len * 3];
 

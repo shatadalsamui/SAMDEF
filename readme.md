@@ -256,6 +256,16 @@ The SAMDEF workflow consists of two main phases: **training** and **deployment**
 - **Image Formats:** GeoTIFF
 
 ---
+Rust’s memory safety is primarily enforced by three core rules, often referred to as the “ownership rules”:
+
+1. **Each value in Rust has a single owner.**
+   - Only one variable at a time owns a piece of data.
+
+2. **A value is dropped (memory freed) when its owner goes out of scope.**
+   - Rust automatically cleans up memory when the owner variable is no longer accessible.
+
+3. **You can have either one mutable reference or any number of immutable references to a value, but not both at the same time.**
+   - This prevents data races and ensures safe concurrent access.
 
 ## Usage
 

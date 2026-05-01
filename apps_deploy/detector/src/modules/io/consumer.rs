@@ -35,8 +35,9 @@ pub async fn run_consumer(
     output_dir: PathBuf,
 ) -> Result<()> {
     //config for cpu and gpu , use as per specs
-    let mut session = initialize_session(&model_path, ExecutionProvider::Cpu)?;
-    //let mut session = initialize_session(&model_path, ExecutionProvider::Cuda { device_id: 0 })?;
+    
+    //let mut session = initialize_session(&model_path, ExecutionProvider::Cpu)?;
+    let mut session = initialize_session(&model_path, ExecutionProvider::Cuda { device_id: 0 })?;
 
     let mut batch = Vec::with_capacity(BATCH_SIZE);
 

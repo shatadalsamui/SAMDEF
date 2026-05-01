@@ -15,7 +15,7 @@ pub fn preprocess_image(image_data: &[u8]) -> Result<Vec<f16>> {
         "Image data size must be correct"
     );
 
-    // Planar Transposition (HWC to CHW) & Normalization
+    // Planar Transposition (HWC(height-width-channel rgbrgbrgbrgb) to CHW(channel-height-width rrrrggggbbbb)) & Normalization
     let mut tensor = vec![f16::from_f32(0.0); 3 * WIDTH * HEIGHT];
     let plane_size = WIDTH * HEIGHT;
 
