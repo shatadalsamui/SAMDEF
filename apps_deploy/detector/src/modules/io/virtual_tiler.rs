@@ -63,10 +63,14 @@ pub fn process_geotiff(source_path_str: &str, msg_sender: Sender<PipelineMessage
             let len = TILE_SIZE * TILE_SIZE;
             let mut interleaved_data = vec![0u8; len * 3];
 
+            let r_data = r_buffer.data();
+            let g_data = g_buffer.data();
+            let b_data = b_buffer.data();
+
             for i in 0..len {
-                interleaved_data[i * 3] = r_buffer.data[i];
-                interleaved_data[i * 3 + 1] = g_buffer.data[i];
-                interleaved_data[i * 3 + 2] = b_buffer.data[i];
+                interleaved_data[i * 3] = r_data[i];
+                interleaved_data[i * 3 + 1] = g_data[i];
+                interleaved_data[i * 3 + 2] = b_data[i];
             }
 
             let task = InferenceTask {

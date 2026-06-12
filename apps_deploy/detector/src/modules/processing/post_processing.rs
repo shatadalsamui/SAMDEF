@@ -42,10 +42,6 @@ fn calculate_iou(box_a: &BoundingBox, box_b: &BoundingBox) -> f32 {
 
 /// O(n) Spatial Grid NMS with 3x3 Neighborhood Overlap
 pub fn non_maximum_suppression(detections: &mut Vec<Detection>, iou_threshold: f32) {
-    use rayon::prelude::*;
-    use std::cmp::Ordering;
-    use std::collections::HashMap;
-
     if detections.is_empty() {
         return;
     }
@@ -129,7 +125,7 @@ pub fn parse_output(output: ArrayView2<f16>) -> Vec<Detection> {
     const MAX_COORD: f32 = IMG_SIZE - 1.0;
 
     // CONFIDENCE THRESHOLDS (0.0 to 1.0)
-    const CLASS_THRESHOLDS: [f32; 8] = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1];
+    const CLASS_THRESHOLDS: [f32; 8] = [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2];
 
     for proposal in output.rows() {
         let confidence = proposal[4].to_f32();

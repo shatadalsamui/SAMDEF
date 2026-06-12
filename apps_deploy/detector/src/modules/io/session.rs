@@ -12,12 +12,12 @@ pub fn initialize_session(model_path: &PathBuf, provider: ExecutionProvider) -> 
     let session = builder.and_then(|builder| {
         match provider {
             ExecutionProvider::Cpu => Ok(builder), // Default is CPU
-            ExecutionProvider::Cuda { device_id } => builder.with_execution_providers([
+            ExecutionProvider::Cuda { device_id } => Ok(builder.with_execution_providers([
                 CUDAExecutionProvider::default().with_device_id(device_id as i32).build()
-            ]),
+            ])?),
         }
     })
-    .and_then(|builder| builder.commit_from_file(model_path));
+    .and_then(|mut builder| builder.commit_from_file(model_path));
 
     match session {
         Ok(session) => {
