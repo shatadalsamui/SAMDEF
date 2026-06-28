@@ -9,7 +9,7 @@ use modules::data::task::PipelineMessage;
 use modules::io::consumer::run_consumer;
 use modules::io::producer::run_producer;
 
-const BATCH_SIZE: usize = 32;
+const BATCH_SIZE: usize = 4;
 
 #[tokio::main]
 async fn main() -> Result<()> {

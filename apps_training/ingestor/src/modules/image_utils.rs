@@ -1,9 +1,9 @@
+use crate::modules::label_parser::Label;
+use crate::modules::labeler::{labels_for_tile, prepare_labels};
+use gdal::Dataset;
 use std::fs;
 use std::path::{Path, PathBuf};
-use gdal::Dataset;
-use turbojpeg::{Compressor, Subsamp, PixelFormat};
-use crate::modules::label_parser::Label;
-use crate::modules::labeler::{prepare_labels, labels_for_tile};
+use turbojpeg::{Compressor, PixelFormat, Subsamp};
 
 pub fn find_tif_images(image_dir: &str) -> Vec<PathBuf> {
     fs::read_dir(image_dir)
@@ -40,9 +40,9 @@ pub fn tile_image(
 
     let mut compressor = Compressor::new()?;
     compressor.set_subsamp(Subsamp::None)?;
-    
+
     // --- FIXED QUALITY ---
-    compressor.set_quality(95)?; 
+    compressor.set_quality(95)?;
 
     let tile_cap = (tile_size * tile_size * 3) as usize;
     let mut tile_pixels: Vec<u8> = vec![0u8; tile_cap];
@@ -57,9 +57,13 @@ pub fn tile_image(
 
         let strip_window = (0isize, tile_y as isize);
         let strip_size = (width, tile_size as usize);
-        let r_strip = band_r.read_as::<u8>(strip_window, strip_size, strip_size, None)?.data;
-        let g_strip = band_g.read_as::<u8>(strip_window, strip_size, strip_size, None)?.data;
-        let b_strip = band_b.read_as::<u8>(strip_window, strip_size, strip_size, None)?.data;
+        let r_buffer = band_r.read_as::<u8>(strip_window, strip_size, strip_size, None)?;
+        let g_buffer = band_g.read_as::<u8>(strip_window, strip_size, strip_size, None)?;
+        let b_buffer = band_b.read_as::<u8>(strip_window, strip_size, strip_size, None)?;
+
+        let r_data = r_buffer.data();
+        let g_data = g_buffer.data();
+        let b_data = b_buffer.data();
 
         let mut x = 0;
         while x < width {
@@ -76,9 +80,9 @@ pub fn tile_image(
             for row in 0..tile_height {
                 let base = row * width + tile_x;
                 let end = base + tile_width;
-                let r_row = &r_strip[base..end];
-                let g_row = &g_strip[base..end];
-                let b_row = &b_strip[base..end];
+                let r_row = &r_data[base..end];
+                let g_row = &g_data[base..end];
+                let b_row = &b_data[base..end];
                 for i in 0..tile_width {
                     tile_pixels[pixel_idx] = r_row[i];
                     tile_pixels[pixel_idx + 1] = g_row[i];
@@ -89,7 +93,10 @@ pub fn tile_image(
 
             let row_idx = y / stride as usize;
             let col_idx = x / stride as usize;
-            let tile_filename = format!("{}/{}_{}_{}.jpg", images_dir, original_name, row_idx, col_idx);
+            let tile_filename = format!(
+                "{}/{}_{}_{}.jpg",
+                images_dir, original_name, row_idx, col_idx
+            );
 
             let image = turbojpeg::Image {
                 pixels: &tile_pixels[..pixel_idx],
@@ -103,7 +110,10 @@ pub fn tile_image(
             std::fs::write(&tile_filename, output.as_ref())?;
 
             let label_content = labels_for_tile(&parsed_labels, tile_x, tile_y, tile_size as usize);
-            let label_filename = format!("{}/{}_{}_{}.txt", labels_dir, original_name, row_idx, col_idx);
+            let label_filename = format!(
+                "{}/{}_{}_{}.txt",
+                labels_dir, original_name, row_idx, col_idx
+            );
             std::fs::write(&label_filename, label_content)?;
 
             if x + stride as usize >= width {
@@ -111,6 +121,7 @@ pub fn tile_image(
             }
             x += stride as usize;
         }
+
         if y + stride as usize >= height {
             break;
         }

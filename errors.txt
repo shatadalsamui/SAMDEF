@@ -1,0 +1,65 @@
+    Updating crates.io index
+error: failed to select a version for `gdal-sys`.
+    ... required by package `gdal v0.16.0`
+    ... which satisfies dependency `gdal = "^0.16.0"` of package `ingestor v0.1.0 (/home/shatadal/SAMDEF/apps_training/ingestor)`
+versions that meet the requirements `^0.9` are: 0.9.1, 0.9.0
+
+package `gdal-sys` links to the native library `gdal`, but it conflicts with a previous package which links to `gdal` as well:
+package `gdal-sys v0.12.0`
+    ... which satisfies dependency `gdal-sys = "^0.12"` of package `gdal v0.19.0`
+    ... which satisfies dependency `gdal = "^0.19.0"` of package `samdef_detector v0.1.0 (/home/shatadal/SAMDEF/apps_deploy/detector)`
+Only one package in the dependency graph may specify the same links value. This helps ensure that only one copy of a native library is linked in the final binary. Try to adjust your dependencies so that only one package uses the `links = "gdal"` value. For more information, see https://doc.rust-lang.org/cargo/reference/resolver.html#links.
+
+failed to select a version for `gdal-sys` which could resolve this conflict
+    Updating crates.io index
+error: failed to select a version for `gdal-sys`.
+    ... required by package `gdal v0.16.0`
+    ... which satisfies dependency `gdal = "^0.16.0"` of package `ingestor v0.1.0 (/home/shatadal/SAMDEF/apps_training/ingestor)`
+versions that meet the requirements `^0.9` are: 0.9.1, 0.9.0
+
+package `gdal-sys` links to the native library `gdal`, but it conflicts with a previous package which links to `gdal` as well:
+package `gdal-sys v0.12.0`
+    ... which satisfies dependency `gdal-sys = "^0.12"` of package `gdal v0.19.0`
+    ... which satisfies dependency `gdal = "^0.19.0"` of package `samdef_detector v0.1.0 (/home/shatadal/SAMDEF/apps_deploy/detector)`
+Only one package in the dependency graph may specify the same links value. This helps ensure that only one copy of a native library is linked in the final binary. Try to adjust your dependencies so that only one package uses the `links = "gdal"` value. For more information, see https://doc.rust-lang.org/cargo/reference/resolver.html#links.
+
+failed to select a version for `gdal-sys` which could resolve this conflict
+    Updating crates.io index
+error: failed to select a version for `gdal-sys`.
+    ... required by package `gdal v0.16.0`
+    ... which satisfies dependency `gdal = "^0.16.0"` of package `ingestor v0.1.0 (/home/shatadal/SAMDEF/apps_training/ingestor)`
+versions that meet the requirements `^0.9` are: 0.9.1, 0.9.0
+
+package `gdal-sys` links to the native library `gdal`, but it conflicts with a previous package which links to `gdal` as well:
+package `gdal-sys v0.12.0`
+    ... which satisfies dependency `gdal-sys = "^0.12"` of package `gdal v0.19.0`
+    ... which satisfies dependency `gdal = "^0.19.0"` of package `samdef_detector v0.1.0 (/home/shatadal/SAMDEF/apps_deploy/detector)`
+Only one package in the dependency graph may specify the same links value. This helps ensure that only one copy of a native library is linked in the final binary. Try to adjust your dependencies so that only one package uses the `links = "gdal"` value. For more information, see https://doc.rust-lang.org/cargo/reference/resolver.html#links.
+
+failed to select a version for `gdal-sys` which could resolve this conflict
+    Updating crates.io index
+error: failed to select a version for `gdal-sys`.
+    ... required by package `gdal v0.16.0`
+    ... which satisfies dependency `gdal = "^0.16.0"` of package `ingestor v0.1.0 (/home/shatadal/SAMDEF/apps_training/ingestor)`
+versions that meet the requirements `^0.9` are: 0.9.1, 0.9.0
+
+package `gdal-sys` links to the native library `gdal`, but it conflicts with a previous package which links to `gdal` as well:
+package `gdal-sys v0.12.0`
+    ... which satisfies dependency `gdal-sys = "^0.12"` of package `gdal v0.19.0`
+    ... which satisfies dependency `gdal = "^0.19.0"` of package `samdef_detector v0.1.0 (/home/shatadal/SAMDEF/apps_deploy/detector)`
+Only one package in the dependency graph may specify the same links value. This helps ensure that only one copy of a native library is linked in the final binary. Try to adjust your dependencies so that only one package uses the `links = "gdal"` value. For more information, see https://doc.rust-lang.org/cargo/reference/resolver.html#links.
+
+failed to select a version for `gdal-sys` which could resolve this conflict
+    Updating crates.io index
+error: failed to select a version for `gdal-sys`.
+    ... required by package `gdal v0.16.0`
+    ... which satisfies dependency `gdal = "^0.16.0"` of package `ingestor v0.1.0 (/home/shatadal/SAMDEF/apps_training/ingestor)`
+versions that meet the requirements `^0.9` are: 0.9.1, 0.9.0
+
+package `gdal-sys` links to the native library `gdal`, but it conflicts with a previous package which links to `gdal` as well:
+package `gdal-sys v0.12.0`
+    ... which satisfies dependency `gdal-sys = "^0.12"` of package `gdal v0.19.0`
+    ... which satisfies dependency `gdal = "^0.19.0"` of package `samdef_detector v0.1.0 (/home/shatadal/SAMDEF/apps_deploy/detector)`
+Only one package in the dependency graph may specify the same links value. This helps ensure that only one copy of a native library is linked in the final binary. Try to adjust your dependencies so that only one package uses the `links = "gdal"` value. For more information, see https://doc.rust-lang.org/cargo/reference/resolver.html#links.
+
+failed to select a version for `gdal-sys` which could resolve this conflict

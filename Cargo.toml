@@ -1,0 +1,9 @@
+[workspace]
+resolver = "2"
+members = [
+    "apps_deploy/db_processor",
+    "apps_deploy/detector",
+    "apps_deploy/gui_iced",
+    "apps_deploy/post_processor",
+    "apps_training/ingestor"
+]
