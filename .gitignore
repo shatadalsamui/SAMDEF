@@ -64,3 +64,10 @@ inference_examples/
 
 # Gemini file
 Gemini.md
+
+# Environment Variables
+.env
+
+# AI Exclude Rules
+.aiexclude
+.antigravityignore

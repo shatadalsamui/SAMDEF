@@ -2524,6 +2524,7 @@ dependencies = [
 name = "ingestor"
 version = "0.1.0"
 dependencies = [
+ "dotenv",
  "gdal",
  "image 0.24.9",
  "indicatif",
