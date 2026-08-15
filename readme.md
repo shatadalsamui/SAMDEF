@@ -118,8 +118,7 @@ To view the images at full size, right-click the link and select "Open link in n
 
 | Provider | Model        | Batch Size | Total Time (sec) | Time per km² (sec) | Notes                        |
 |----------|--------------|------------|------------------|--------------------|------------------------------|
-| GPU      | YOLO26s FP16 | 4          | 55               | 0.24               | RTX 4060, full FP16 accel    |
-| CPU      | YOLO26s FP16 | 4          | 1126             | 4.95               | i9-13900HX, FP16 emulated    |
+| GPU      | YOLO26s FP16 | 4          | 52               | 0.23               | RTX 4060, full FP16 accel    |
 | CPU      | YOLO26s FP16 | 4          | 999              | 4.39               | i9-13900HX, FP16 emulated    |
 
 **Specs:** i9-13900HX, 24GB RAM, RTX 4060  
