@@ -128,6 +128,24 @@ To view the images at full size, right-click the link and select "Open link in n
   - CPU is ~19x slower than GPU for this workload, which matches expectations for FP16 emulation on a high-end CPU.
   - Time per km² is a useful metric for scaling to larger areas or comparing with other systems.
   - Both CPU and GPU performance are strong for a lightweight model like YOLO26s.
+
+### Model Metrics (Validation Set)
+
+| Class | Images | Instances | Precision (P) | Recall (R) | mAP50 | mAP50-95 |
+|---|---|---|---|---|---|---|
+| all | 1289 | 127500 | 0.550 | 0.427 | 0.442 | 0.241 |
+| Light-Vehicle | 697 | 50191 | 0.713 | 0.783 | 0.770 | 0.349 |
+| Boxy-Truck | 542 | 4851 | 0.512 | 0.402 | 0.425 | 0.227 |
+| Long-Trucks | 502 | 4820 | 0.473 | 0.350 | 0.363 | 0.180 |
+| Small-Boat | 84 | 748 | 0.629 | 0.683 | 0.650 | 0.331 |
+| Large-Ship | 80 | 315 | 0.479 | 0.302 | 0.360 | 0.193 |
+| Fixed-Wing | 74 | 200 | 0.872 | 0.714 | 0.803 | 0.462 |
+| Helicopter | 4 | 5 | 0.277 | 0.200 | 0.197 | 0.122 |
+| Building | 783 | 60680 | 0.583 | 0.655 | 0.635 | 0.328 |
+| Storage-Tank | 78 | 407 | 0.719 | 0.369 | 0.468 | 0.271 |
+| Railway | 24 | 586 | 0.760 | 0.691 | 0.712 | 0.428 |
+| Engineering-Machinery | 264 | 1433 | 0.537 | 0.426 | 0.457 | 0.260 |
+| Tower-Pylon | 94 | 160 | 0.802 | 0.388 | 0.452 | 0.295 |
   
 ## Folder Structure
 ### apps_deploy
