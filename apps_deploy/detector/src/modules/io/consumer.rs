@@ -13,7 +13,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::task::JoinSet;
 
-// Strict batch size for greedy mixed batching.
 const BATCH_SIZE: usize = 4;
 
 // Track the state of each file individually

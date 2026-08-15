@@ -13,3 +13,4 @@ serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 tiff = "0.10.3"
 turbojpeg = "1.4.0"
+dotenv = "0.15.0"

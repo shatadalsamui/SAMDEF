@@ -1,5 +1,7 @@
 use anyhow::Result;
 use crossbeam::channel;
+use dotenv::dotenv;
+use std::env;
 use std::fs;
 use std::path::PathBuf;
 use std::thread;
@@ -13,14 +15,13 @@ const BATCH_SIZE: usize = 4;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    dotenv().ok();
     env_logger::init();
     let _ = ort::init().with_name("SAMDEF_Detector").commit();
 
-    let input_dir = PathBuf::from("/home/shatadal/SAMDEF_DATA/val_images");
-    //let input_dir = PathBuf::from("/home/shatadal/SAMDEF_DATA/simulations/long_rectangle/ready");
-    let output_dir = PathBuf::from("/home/shatadal/SAMDEF/raw_data/inference/results");
-    let model_path =
-        PathBuf::from("/home/shatadal/SAMDEF/apps_deploy/detector/model/best_fp16_patched.onnx");
+    let input_dir = PathBuf::from(env::var("INPUT_DIR").expect("INPUT_DIR must be set in .env"));
+    let output_dir = PathBuf::from(env::var("OUTPUT_DIR").expect("OUTPUT_DIR must be set in .env"));
+    let model_path = PathBuf::from(env::var("MODEL_PATH").expect("MODEL_PATH must be set in .env"));
 
     fs::create_dir_all(&output_dir)?;
 

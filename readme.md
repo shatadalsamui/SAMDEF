@@ -1,9 +1,10 @@
-# SAMDEF: High-Performance Edge Platform for ISR
+# SAMDEF: High-Performance Edge Computer Vision System
 
 ---
 
 ## Table of Contents
 - [Overview](#overview)
+- [Use Cases](#use-cases)
 - [Architecture](#architecture)
 - [Workflow & Data Flow](#workflow--data-flow)
 - [Modular Apps](#modular-apps)
@@ -17,19 +18,28 @@
 
 ## Overview
 
-**SAMDEF** is a high-performance, modular monolith platform designed for PED (Processing, Exploitation, and Dissemination) within the Intelligence, Surveillance, and Reconnaissance (ISR) framework. Optimized for the tactical edge, it enables high-throughput analysis of massive geospatial imagery and automated object detection directly on-premise, eliminating reliance on cloud or SaaS infrastructure.
+**SAMDEF** is a high-performance, modular monolith platform designed for efficient edge computer vision and massive-scale image processing. Optimized for on-premise execution without reliance on cloud or SaaS infrastructure, it enables high-throughput automated object detection on exceptionally large imagery (such as massive GeoTIFFs).
 
-**Strategic Context & OODA/PED Alignment:**  
-The platform accelerates the 'Observe' and 'Orient' phases of the OODA loop by bridging the gap between raw sensor data and actionable intelligence. By automating the data-intensive groundwork—transforming raw pixels into a spatial grid of identified threats—SAMDEF acts as a high-speed scout. It provides operators with the critical "What" and "Where" through techniques such as Spatial Grid NMS and Multi-Class Tactical Categorization. This output serves as the primary information source for the broader Intelligence effort, allowing commanders and analysts to focus on the Decide and Act phases with superior geospatial awareness.
+The system automates the data-intensive groundwork of transforming raw pixels into structured, geospatial knowledge. By leveraging a Zero-Wait GPU Pipeline, it ensures that while one batch of imagery is analyzed, the next is already being pre-processed in memory, maximizing hardware utilization. It provides operators with the critical "What" and "Where" by mapping every detected object (e.g., vehicles, infrastructure, specific assets) to its exact Global Geospatial Coordinates and suppressing duplicates via Spatial Grid NMS.
 
-**The Observe Phase (Programmatic Scanning):**  
-SAMDEF automates the "Observe" stage by programmatically scanning massive GeoTIFFs that are far too large for manual human review. Its Zero-Wait GPU Pipeline ensures that while one batch of imagery is being analyzed, the next is already being pre-processed in memory, allowing for near-continuous observation of tactical areas.
+By delivering high-fidelity metadata and object locations directly to a local database in near real-time, SAMDEF acts as a high-speed programmatic scout for environments that are far too large for manual human review.
 
-**The Orient Phase (Geospatial Contextualization):**  
-The system handles the "Orient" stage by converting raw detections into a structured tactical layout. By mapping every detected asset (e.g., Tank, Building, Vehicle) to its exact Global Geospatial Coordinates and suppressing duplicates via Spatial Grid NMS, it provides the operator with an instant, accurate understanding of the battlefield reality.
+## Use Cases
 
-**The Decide Phase (Intelligence Enablement):**  
-While the final command remains human-led, SAMDEF accelerates the "Decide" phase by generating automated Situation Reports (SITREPs). By delivering high-fidelity metadata and classified threat locations directly to the local database, it provides the essential intelligence needed to move from raw data to a decisive action in seconds rather than hours.
+SAMDEF is optimized for massive geospatial and satellite imagery—processing directly on the edge, not on a remote server—making it highly effective across defense, civilian, and commercial applications.
+
+### Off-Grid Surveillance & Remote Operations
+SAMDEF is engineered for remote environments where cloud connectivity is unavailable or compromised. It is highly effective for processing satellite or high-altitude drone imagery directly at the edge:
+- **Fully Offline Execution:** Operates 100% locally on field hardware, requiring absolutely no internet connection to process massive GeoTIFFs.
+- **High-Altitude Analytics:** Rapidly scans imagery from drones or satellites, converting raw pixels into actionable intelligence in near real-time.
+- **Geospatial Contextualization:** Automatically maps detected objects of interest (e.g., vehicles, equipment, structures) to exact global coordinates, providing operators with instant situational awareness in the field.
+
+### Civilian and Commercial Applications
+- **Urban & Town Planning:** Automating the detection of buildings, road networks, and infrastructure changes over time to monitor urban sprawl and inform zoning decisions.
+- **Traffic & Logistics Analysis:** Identifying and counting vehicles across massive areas (e.g., highways, shipping ports, distribution centers) to analyze traffic density, parking utilization, and supply chain activity.
+- **Disaster Response & Damage Assessment:** Rapidly scanning affected regions to locate structural damage, blocked roads, and temporary settlements after natural disasters.
+- **Environmental & Maritime Monitoring:** Tracking changes in vegetation, monitoring coastal erosion, or detecting illicit maritime activity.
+- **Agriculture:** Surveying expansive farmlands to identify crop health boundaries, water usage, and structural assets (like silos and tractors).
 
 - **Deployment modules** handle huge GeoTIFF image processing, object detection, and visualization.
 - **Training modules** manage data preparation and model training to enhance detection accuracy.
@@ -104,17 +114,17 @@ To view the images at full size, right-click the link and select "Open link in n
 - **Total area:** 227.61 km²
 - **Batch size:** 32
 
-| Provider | Model         | Batch Size | Total Time (sec) | Time per km² (sec) | Notes                        |
+| Provider | Model        | Batch Size | Total Time (sec) | Time per km² (sec) | Notes                        |
 |----------|--------------|------------|------------------|--------------------|------------------------------|
-| GPU      | YOLO26s FP16 | 32         | 70               | 0.31               | RTX 4060, full FP16 accel    |
-| CPU      | YOLO26s FP16 | 32         | 1126             | 4.95               | i9-13900HX, FP16 emulated    |
+| GPU      | YOLO26s FP16 | 4          | 55               | 0.24               | RTX 4060, full FP16 accel    |
+| CPU      | YOLO26s FP16 | 4          | 1126             | 4.95               | i9-13900HX, FP16 emulated    |
 | CPU      | YOLO26s FP16 | 4          | 999              | 4.39               | i9-13900HX, FP16 emulated    |
 
 **Specs:** i9-13900HX, 24GB RAM, RTX 4060  
 **Dataset:** 281 images, 3000×3000 px, 0.3m GSD, 227.61 km² total
 
 - **Interpretation:**  
-  - CPU is ~16x slower than GPU for this workload, which matches expectations for FP16 emulation on a high-end CPU.
+  - CPU is ~19x slower than GPU for this workload, which matches expectations for FP16 emulation on a high-end CPU.
   - Time per km² is a useful metric for scaling to larger areas or comparing with other systems.
   - Both CPU and GPU performance are strong for a lightweight model like YOLO26s.
   
@@ -169,7 +179,7 @@ SAMDEF is structured as a modular monolith: all core logic resides in a unified 
 The SAMDEF workflow consists of two main phases: **training** and **deployment**.
 
 ### Training Phase
-1. Raw ISR data is ingested and labeled using the Ingestor module.
+1. Raw imagery data is ingested and labeled using the Ingestor module.
 2. Labeled datasets are used by the Model Trainer for YOLO model training.
 3. Trained models are exported in ONNX format for deployment.
 
@@ -225,7 +235,7 @@ The SAMDEF workflow consists of two main phases: **training** and **deployment**
 #### ingestor
 - **Purpose:** Data ingestion and preparation for model training.
 - **How it works:** 
-  - Processes raw ISR data, balances datasets, parses and converts labels, and prepares images.
+  - Processes raw imagery data, balances datasets, parses and converts labels, and prepares images.
   - Outputs labeled datasets suitable for machine learning.
 - **Key features:** Automated dataset balancing, label format conversion, image preprocessing utilities.
 - **Folder structure:**
@@ -256,16 +266,6 @@ The SAMDEF workflow consists of two main phases: **training** and **deployment**
 - **Image Formats:** GeoTIFF
 
 ---
-Rust’s memory safety is primarily enforced by three core rules, often referred to as the “ownership rules”:
-
-1. **Each value in Rust has a single owner.**
-   - Only one variable at a time owns a piece of data.
-
-2. **A value is dropped (memory freed) when its owner goes out of scope.**
-   - Rust automatically cleans up memory when the owner variable is no longer accessible.
-
-3. **You can have either one mutable reference or any number of immutable references to a value, but not both at the same time.**
-   - This prevents data races and ensures safe concurrent access.
 
 ## Usage
 
@@ -275,6 +275,3 @@ Rust’s memory safety is primarily enforced by three core rules, often referred
 
 ---
 
-## License
-
-This project is **proprietary software

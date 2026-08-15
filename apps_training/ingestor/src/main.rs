@@ -6,11 +6,12 @@ use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 
 fn main() {
-    let base_output_dir = "/home/shatadal/SAMDEF/raw_data/processed_tiles";
+    dotenv::dotenv().ok();
+    let base_output_dir = std::env::var("BASE_OUTPUT_DIR").expect("BASE_OUTPUT_DIR must be set in .env");
 
     // Load labels once
-    let labels_file = "/home/shatadal/SAMDEF_DATA/train_labels/xView_train.geojson";
-    let features = match load_labels(labels_file) {
+    let labels_file = std::env::var("LABELS_FILE").expect("LABELS_FILE must be set in .env");
+    let features = match load_labels(&labels_file) {
         Ok(f) => f,
         Err(e) => {
             eprintln!("Error loading labels: {}", e);
@@ -64,8 +65,8 @@ fn main() {
     let tile_size = 1152;
     let stride = 922;
 
-    let image_dir = "/home/shatadal/SAMDEF_DATA/train_images/";
-    let tif_files = find_tif_images(image_dir);
+    let image_dir = std::env::var("IMAGE_DIR").expect("IMAGE_DIR must be set in .env");
+    let tif_files = find_tif_images(&image_dir);
     println!("Found {} .tif images.", tif_files.len());
 
     let start = std::time::Instant::now();

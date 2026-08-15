@@ -21,6 +21,7 @@ use std::time::Instant;
 use tiff::decoder::Decoder;
 
 // Neon color palette for 8 classes
+// Neon color palette for 8 classes
 const NEON_COLORS: [Rgb<u8>; 8] = [
     Rgb([255, 0, 128]), // Neon Pink
     Rgb([57, 255, 20]), // Neon Green
@@ -31,12 +32,6 @@ const NEON_COLORS: [Rgb<u8>; 8] = [
     Rgb([255, 110, 0]), // Neon Orange
     Rgb([0, 255, 200]), // Neon Blue-Green
 ];
-
-// --- CONFIGURATION ---
-const JSON_DIR: &str = "/home/shatadal/SAMDEF/raw_data/inference/results";
-const OUTPUT_DIR: &str = "/home/shatadal/SAMDEF/raw_data/inference/annotated";
-const FONT_PATH: &str = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf";
-// ---------------------
 
 #[derive(Debug, Deserialize, Clone)]
 struct BBox {
@@ -60,32 +55,38 @@ struct FinalOutput {
 }
 
 fn main() -> Result<()> {
-    fs::create_dir_all(OUTPUT_DIR)?;
+    dotenv::dotenv().ok();
+
+    let json_dir = std::env::var("JSON_DIR").expect("JSON_DIR must be set in .env");
+    let output_dir = std::env::var("OUTPUT_DIR").expect("OUTPUT_DIR must be set in .env");
+    let font_path = std::env::var("FONT_PATH").expect("FONT_PATH must be set in .env");
+
+    fs::create_dir_all(&output_dir)?;
     println!(" Visualizer Running...");
 
-    let font_data = fs::read(FONT_PATH).unwrap_or_else(|_| Vec::new());
+    let font_data = fs::read(&font_path).unwrap_or_else(|_| Vec::new());
     let font = FontRef::try_from_slice(&font_data).ok();
 
-    let entries: Vec<_> = fs::read_dir(JSON_DIR)?.filter_map(|e| e.ok()).collect();
+    let entries: Vec<_> = fs::read_dir(&json_dir)?.filter_map(|e| e.ok()).collect();
 
     let start = Instant::now();
 
     entries.par_iter().for_each(|entry| {
         let path = entry.path();
         if path.to_string_lossy().ends_with("_results.json") {
-            if let Err(e) = process_map(&path, &font) {
+            if let Err(e) = process_map(&path, &font, &output_dir) {
                 eprintln!("Error processing map for {:?}: {}", path, e);
             }
         }
     });
 
     let duration = start.elapsed();
-    println!(" Done. Check: {}", OUTPUT_DIR);
+    println!(" Done. Check your output directory.");
     println!("Total annotation time: {:.2?}", duration);
     Ok(())
 }
 
-fn process_map(json_path: &Path, font: &Option<FontRef>) -> Result<()> {
+fn process_map(json_path: &Path, font: &Option<FontRef>, output_dir: &str) -> Result<()> {
     let output: FinalOutput = serde_json::from_reader(BufReader::new(File::open(json_path)?))?;
     let detections = output.detections;
     let image_path = Path::new(&output.source_image);
@@ -180,6 +181,6 @@ fn process_map(json_path: &Path, font: &Option<FontRef>) -> Result<()> {
     }
 
     let output_name = format!("{}_annotated.png", tiff_id);
-    image.save(format!("{}/{}", OUTPUT_DIR, output_name))?;
+    image.save(format!("{}/{}", output_dir, output_name))?;
     Ok(())
 }

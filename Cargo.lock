@@ -4228,6 +4228,7 @@ version = "0.1.0"
 dependencies = [
  "ab_glyph",
  "anyhow",
+ "dotenv",
  "image 0.25.10",
  "imageproc",
  "rayon",
@@ -5051,6 +5052,7 @@ dependencies = [
  "anyhow",
  "bincode",
  "crossbeam",
+ "dotenv",
  "env_logger",
  "gdal",
  "half",
