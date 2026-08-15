@@ -11,8 +11,6 @@ use modules::data::task::PipelineMessage;
 use modules::io::consumer::run_consumer;
 use modules::io::producer::run_producer;
 
-const BATCH_SIZE: usize = 4;
-
 #[tokio::main]
 async fn main() -> Result<()> {
     dotenv().ok();
@@ -22,6 +20,14 @@ async fn main() -> Result<()> {
     let input_dir = PathBuf::from(env::var("INPUT_DIR").expect("INPUT_DIR must be set in .env"));
     let output_dir = PathBuf::from(env::var("OUTPUT_DIR").expect("OUTPUT_DIR must be set in .env"));
     let model_path = PathBuf::from(env::var("MODEL_PATH").expect("MODEL_PATH must be set in .env"));
+    let batch_size: usize = env::var("BATCH_SIZE")
+        .unwrap_or_else(|_| "4".to_string())
+        .parse()
+        .expect("BATCH_SIZE must be a valid number in .env");
+    let producer_parallelism: usize = env::var("PRODUCER_PARALLELISM")
+        .unwrap_or_else(|_| "4".to_string())
+        .parse()
+        .expect("PRODUCER_PARALLELISM must be a valid number in .env");
 
     fs::create_dir_all(&output_dir)?;
 
@@ -33,11 +39,11 @@ async fn main() -> Result<()> {
     let start_time = std::time::Instant::now();
 
     // Use PipelineMessage channel instead of InferenceTask
-    let (msg_tx, msg_rx) = channel::bounded::<PipelineMessage>(BATCH_SIZE * 2);
+    let (msg_tx, msg_rx) = channel::bounded::<PipelineMessage>(batch_size * 2);
 
     // Pass output_dir to consumer for per-file saving/publishing
-    let consumer_handle = thread::spawn(move || run_consumer(msg_rx, model_path, output_dir));
-    let producer_handle = thread::spawn(move || run_producer(input_dir, msg_tx));
+    let consumer_handle = thread::spawn(move || run_consumer(msg_rx, model_path, output_dir, batch_size));
+    let producer_handle = thread::spawn(move || run_producer(input_dir, msg_tx, producer_parallelism));
 
     let _ = producer_handle
         .join()

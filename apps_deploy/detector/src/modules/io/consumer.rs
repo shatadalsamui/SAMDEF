@@ -13,8 +13,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::task::JoinSet;
 
-const BATCH_SIZE: usize = 4;
-
 // Track the state of each file individually
 struct FileState {
     detections: Vec<Detection>,
@@ -31,13 +29,14 @@ pub async fn run_consumer(
     task_rx: channel::Receiver<PipelineMessage>,
     model_path: PathBuf,
     output_dir: PathBuf,
+    batch_size: usize,
 ) -> Result<()> {
     //config for cpu and gpu , use as per specs
 
     //let mut session = initialize_session(&model_path, ExecutionProvider::Cpu)?;
     let mut session = initialize_session(&model_path, ExecutionProvider::Cuda { device_id: 0 })?;
 
-    let mut batch = Vec::with_capacity(BATCH_SIZE);
+    let mut batch = Vec::with_capacity(batch_size);
 
     // State Tracker: Key = Canonicalized Filename
     let mut pending_files: HashMap<String, FileState> = HashMap::new();
@@ -64,7 +63,7 @@ pub async fn run_consumer(
 
                 // Only process when we hit the FULL batch size.
                 // This ensures 100% GPU utilization.
-                if batch.len() == BATCH_SIZE {
+                if batch.len() == batch_size {
                     process_batch_and_update(
                         &mut session,
                         &batch,
