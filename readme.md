@@ -114,7 +114,7 @@ To view the images at full size, right-click the link and select "Open link in n
 
 - **Dataset:** 281 images (~3000×3000 pixels each, 0.3m GSD)
 - **Total area:** 227.61 km²
-- **Batch size:** 32
+- **Hardware Profile:** CUDA Core utilization maintained at 75-85%. VRAM footprint remained under 1GB for Batch Size 4.
 
 | Provider | Model        | Batch Size | Total Time (sec) | Time per km² (sec) | Notes                        |
 |----------|--------------|------------|------------------|--------------------|------------------------------|
