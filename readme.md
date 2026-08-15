@@ -8,14 +8,13 @@
 ## Table of Contents
 - [Overview](#overview)
 - [Use Cases](#use-cases)
+- [Inference Examples](#inference-examples)
 - [Architecture](#architecture)
 - [Workflow & Data Flow](#workflow--data-flow)
 - [Modular Apps](#modular-apps)
-  - [Deployment Modules](#deployment-modules)
-  - [Training Modules](#training-modules)
 - [Tech Stack](#tech-stack)
+- [Installation & Setup](#installation--setup)
 - [Usage](#usage)
-- [License](#license)
 
 ---
 
@@ -168,6 +167,16 @@ apps_training/
 
 SAMDEF is structured as a modular monolith: all core logic resides in a unified codebase, with each module responsible for a distinct function. Modules are decoupled for maintainability and communicate via Zenoh in peer-to-peer mode, ensuring efficient and scalable data exchange.
 
+```mermaid
+flowchart TD
+    A[Raw GeoTIFFs] --> B[Detector Module]
+    B -->|Zenoh Pub/Sub| C[DB Processor]
+    C -->|SQL Insert| D[(PostgreSQL Database)]
+    B -->|Output JSON| E[Post Processor]
+    A --> E
+    E --> F[Annotated Images]
+```
+
 **Key architectural highlights:**
 - **Modular Monolith:** Unified codebase with clear module boundaries.
 - **Decoupled Modules:** Each module can be developed and maintained independently.
@@ -227,6 +236,7 @@ The SAMDEF workflow consists of two main phases: **training** and **deployment**
   - Publishes and receives data via Zenoh peer-to-peer communication.
   - Enables querying and persistence of historical detections.
 - **Key features:** Asynchronous database interactions, real-time data publishing, robust error handling.
+- **Database Schema:** Tables and relationships are defined in `src/modules/schema/init.sql`.
 - **Folder structure:**
   - `src/`: Rust source code for database and Zenoh integration.
   - `docs/`: Documentation for database schema and integration.
@@ -270,11 +280,68 @@ The SAMDEF workflow consists of two main phases: **training** and **deployment**
 
 ---
 
+## Installation & Setup
+
+### System Dependencies
+
+> **Operating System:** SAMDEF is designed and optimized specifically for Linux-based operating systems (Ubuntu/Debian recommended).
+
+SAMDEF requires several OS-level dependencies for massive-scale image processing, database operations, and GPU acceleration. Ensure you have the following installed:
+- **Core Languages:** Rust (via `rustup`), Python 3.9+ (with `python3-venv`), and PostgreSQL.
+- **Hardware Acceleration:** CUDA Toolkit (11.x or 12.x) and cuDNN. *(Note: The ONNX Runtime binaries are fetched automatically by the Rust build process, but the host system must have CUDA/cuDNN installed).*
+- **C Libraries:** `libgdal-dev` (for GeoTIFF parsing), `libturbojpeg0-dev` (for high-speed image encoding/decoding), and `pkg-config`.
+
+### Setup Instructions
+1. **Environment Variables:** 
+   - Navigate to each microservice (`apps_deploy/detector`, `apps_deploy/post_processor`, `apps_deploy/db_processor`, `apps_training/ingestor`, `apps_training/yolo_model_trainer`).
+   - Copy the `.env.example` file to `.env` (`cp .env.example .env`).
+   - Update the paths and database credentials in the `.env` file to match your local system.
+3. **Database Initialization:** Ensure your PostgreSQL instance is running. The `db_processor` will automatically initialize the schema on its first run.
+4. **Python Dependencies:** For the YOLO trainer, set up the virtual environment:
+   ```bash
+   cd apps_training/yolo_model_trainer
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -e .
+   ```
+
+---
+
 ## Usage
 
-- **Start training:** Use the Model Trainer with datasets prepared by the Ingestor.
-- **Deploy modules:** Launch Detector, DB Processor, and Post Processor as needed.
-- **Monitor:** Use logs and Zenoh topics for real-time monitoring.
+### Deployment Pipeline
+To run the main detection and deployment pipeline, launch the Rust microservices:
+
+1. **Start the DB Processor (Zenoh Listener):**
+   ```bash
+   cd apps_deploy/db_processor
+   cargo run --release
+   ```
+2. **Start the Detector (GPU Inference):**
+   ```bash
+   cd apps_deploy/detector
+   cargo run --release
+   ```
+3. **Run the Post Processor (Image Annotation):**
+   ```bash
+   cd apps_deploy/post_processor
+   cargo run --release
+   ```
+
+### Training Pipeline
+To train new models on custom datasets:
+
+1. **Ingest Data:**
+   ```bash
+   cd apps_training/ingestor
+   cargo run --release
+   ```
+2. **Train Model:**
+   ```bash
+   cd apps_training/yolo_model_trainer
+   source venv/bin/activate
+   python src/main.py train
+   ```
 
 ---
 
