@@ -1,5 +1,8 @@
 # SAMDEF: High-Performance Edge Computer Vision System
 
+> **Module Documentation:** For deep technical dives into the architecture, please see the individual module docs:
+> [Detector](docs/architecture/detector.md) | [DB Processor](docs/architecture/dbprocessor.md) | [Ingestor](docs/architecture/ingestor_training.md) | [Model Trainer](docs/architecture/model_trainer.md)
+
 ---
 
 ## Table of Contents
