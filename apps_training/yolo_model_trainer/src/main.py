@@ -2,6 +2,9 @@ import argparse
 import os
 import sys
 from functools import partial
+from dotenv import load_dotenv
+
+load_dotenv()
 
 import tqdm
 
@@ -30,7 +33,10 @@ def check_environment():
         print("Warning: No gpu detected. Training will be extremely slow.")
 
     # Check Data
-    data_path = "/home/shatadal/SAMDEF/raw_data/processed_tiles/data.yaml"
+    data_path = os.getenv("DATA_YAML")
+    if not data_path:
+        sys.exit("Error: DATA_YAML must be set in .env")
+
     if os.path.exists(data_path):
         print("Data configuration found.")
     else:

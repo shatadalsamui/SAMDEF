@@ -1,5 +1,8 @@
 import os
 import sys
+from dotenv import load_dotenv
+
+load_dotenv()
 
 import torch
 from ultralytics import YOLO
@@ -15,14 +18,19 @@ def run_training():
     print(f"HARDWARE : {gpu_name}")
 
     # CONFIGURATION
-    model_name = (
-        "/home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run15/weights/last.pt"
-    )
-    data_yaml = "/home/shatadal/SAMDEF/raw_data/processed_tiles/data.yaml"
-    project_name = (
-        "/home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/SAMDEF_ISR"
-    )
-    run_name = "Run15"
+    model_name = os.getenv("MODEL_NAME")
+    if not model_name:
+        sys.exit("Error: MODEL_NAME must be set in .env")
+
+    data_yaml = os.getenv("DATA_YAML")
+    if not data_yaml:
+        sys.exit("Error: DATA_YAML must be set in .env")
+
+    project_name = os.getenv("PROJECT_NAME")
+    if not project_name:
+        sys.exit("Error: PROJECT_NAME must be set in .env")
+
+    run_name = os.getenv("RUN_NAME", "Run15")
 
     # Verify weights exist before starting to avoid crashing later
     if not os.path.exists(model_name):

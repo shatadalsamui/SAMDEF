@@ -9,5 +9,6 @@ dependencies = [
     "numpy",
     "opencv-python-headless",
     "torch",
-    "shapely"
+    "shapely",
+    "python-dotenv"
 ]
