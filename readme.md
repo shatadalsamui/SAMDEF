@@ -121,7 +121,7 @@ To view the images at full size, right-click the link and select "Open link in n
 | GPU      | YOLO26s FP16 | 4          | 52               | 0.23               | RTX 4060, full FP16 accel    |
 | CPU      | YOLO26s FP16 | 4          | 999              | 4.39               | i9-13900HX, FP16 emulated    |
 
-**Specs:** i9-13900HX, 24GB RAM, RTX 4060  
+**Specs:** i9-13900HX, 48GB RAM, RTX 4060  
 **Dataset:** 281 images, 3000×3000 px, 0.3m GSD, 227.61 km² total
 
 - **Interpretation:**  
