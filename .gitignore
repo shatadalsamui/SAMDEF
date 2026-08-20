@@ -71,3 +71,8 @@ Gemini.md
 # AI Exclude Rules
 .aiexclude
 .antigravityignore
+*.onnx
+*.bin
+*.weights
+target/
+__pycache__/
