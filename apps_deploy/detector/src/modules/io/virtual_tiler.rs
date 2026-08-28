@@ -78,7 +78,6 @@ pub fn process_geotiff(source_path_str: &str, msg_sender: Sender<PipelineMessage
                 source_path: source_path_str.to_string(),
                 global_offset_x: tile_x as i32,
                 global_offset_y: tile_y as i32,
-                geo_transform,
             };
 
             if let Err(_e) = msg_sender.send(PipelineMessage::Process(task)) {

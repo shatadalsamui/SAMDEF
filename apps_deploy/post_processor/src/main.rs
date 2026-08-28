@@ -9,7 +9,7 @@
 // 7: container lot      (Neon Blue-Green)
 use ab_glyph::FontRef;
 use anyhow::Result;
-use image::{Rgb, RgbImage};
+use image::Rgb;
 use imageproc::drawing::draw_hollow_rect_mut;
 use imageproc::rect::Rect;
 use rayon::prelude::*;
@@ -20,7 +20,6 @@ use std::path::Path;
 use std::time::Instant;
 use tiff::decoder::Decoder;
 
-// Neon color palette for 8 classes
 // Neon color palette for 8 classes
 const NEON_COLORS: [Rgb<u8>; 8] = [
     Rgb([255, 0, 128]), // Neon Pink
@@ -45,6 +44,7 @@ struct BBox {
 struct Detection {
     bbox: BBox,
     class_id: usize,
+    #[allow(dead_code)]
     confidence: f32,
 }
 
@@ -59,24 +59,25 @@ fn main() -> Result<()> {
 
     let json_dir = std::env::var("JSON_DIR").expect("JSON_DIR must be set in .env");
     let output_dir = std::env::var("OUTPUT_DIR").expect("OUTPUT_DIR must be set in .env");
-    let font_path = std::env::var("FONT_PATH").expect("FONT_PATH must be set in .env");
+
+    let font: Option<FontRef> = None;
 
     fs::create_dir_all(&output_dir)?;
+
+    let mut entries: Vec<_> = fs::read_dir(&json_dir)?
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .filter(|p| p.extension().map_or(false, |e| e == "json"))
+        .collect();
+
+    entries.sort();
+
     println!(" Visualizer Running...");
-
-    let font_data = fs::read(&font_path).unwrap_or_else(|_| Vec::new());
-    let font = FontRef::try_from_slice(&font_data).ok();
-
-    let entries: Vec<_> = fs::read_dir(&json_dir)?.filter_map(|e| e.ok()).collect();
-
     let start = Instant::now();
 
     entries.par_iter().for_each(|entry| {
-        let path = entry.path();
-        if path.to_string_lossy().ends_with("_results.json") {
-            if let Err(e) = process_map(&path, &font, &output_dir) {
-                eprintln!("Error processing map for {:?}: {}", path, e);
-            }
+        if let Err(e) = process_map(entry, &font, &output_dir) {
+            eprintln!("Error processing {:?}: {}", entry, e);
         }
     });
 
@@ -86,7 +87,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn process_map(json_path: &Path, font: &Option<FontRef>, output_dir: &str) -> Result<()> {
+fn process_map(json_path: &Path, _font: &Option<FontRef>, output_dir: &str) -> Result<()> {
     let output: FinalOutput = serde_json::from_reader(BufReader::new(File::open(json_path)?))?;
     let detections = output.detections;
     let image_path = Path::new(&output.source_image);

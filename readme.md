@@ -114,18 +114,18 @@ To view the images at full size, right-click the link and select "Open link in n
 
 - **Dataset:** 281 images (~3000×3000 pixels each, 0.3m GSD)
 - **Total area:** 227.61 km²
-- **Hardware Profile:** CUDA Core utilization maintained at 75-85%. VRAM footprint remained under 1GB for Batch Size 4.
+- **Hardware Profile:** CUDA Core utilization maintained at 85–95% with decoupled 3-stage pipelining. VRAM footprint remained under 1.5GB for Batch Size 2.
 
 | Provider | Model        | Batch Size | Total Time (sec) | Time per km² (sec) | Notes                        |
 |----------|--------------|------------|------------------|--------------------|------------------------------|
-| GPU      | YOLO26s FP16 | 4          | 52               | 0.23               | RTX 4060, full FP16 accel    |
+| GPU      | YOLO26s FP16 | 2          | 44.59            | 0.20               | RTX 4060, full FP16 accel    |
 | CPU      | YOLO26s FP16 | 4          | 999              | 4.39               | i9-13900HX, FP16 emulated    |
 
 **Specs:** i9-13900HX, 48GB RAM, RTX 4060  
 **Dataset:** 281 images, 3000×3000 px, 0.3m GSD, 227.61 km² total
 
 - **Interpretation:**  
-  - CPU is ~19x slower than GPU for this workload, which matches expectations for FP16 emulation on a high-end CPU.
+  - CPU is ~22x slower than GPU for this workload, which matches expectations for FP16 emulation on a high-end CPU.
   - Time per km² is a useful metric for scaling to larger areas or comparing with other systems.
   - Both CPU and GPU performance are strong for a lightweight model like YOLO26s.
 
@@ -305,7 +305,7 @@ The SAMDEF workflow consists of two main phases: **training** and **deployment**
 
 SAMDEF requires several OS-level dependencies for massive-scale image processing, database operations, and GPU acceleration. Ensure you have the following installed:
 - **Core Languages:** Rust (via `rustup`), Python 3.9+ (with `python3-venv`), and PostgreSQL.
-- **Hardware Acceleration:** CUDA Toolkit (11.x or 12.x) and cuDNN. *(Note: The ONNX Runtime binaries are fetched automatically by the Rust build process, but the host system must have CUDA/cuDNN installed).*
+- **Hardware Acceleration:** CUDA Toolkit (11.x, 12.x, or 13.x) and cuDNN (v8 or v9). *(Note: The ONNX Runtime binaries are fetched automatically by the Rust build process, with native CUDA 13 support enabled in `ort` 2.0.0-rc.13).*
 - **C Libraries:** `libgdal-dev` (for GeoTIFF parsing), `libturbojpeg0-dev` (for high-speed image encoding/decoding), and `pkg-config`.
 
 ### Setup Instructions

@@ -4,7 +4,6 @@ pub struct InferenceTask {
     pub source_path: String,
     pub global_offset_x: i32,
     pub global_offset_y: i32,
-    pub geo_transform: [f64; 6],
 }
 
 #[derive(Debug, Clone)]

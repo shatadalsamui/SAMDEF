@@ -42,8 +42,10 @@ async fn main() -> Result<()> {
     let (msg_tx, msg_rx) = channel::bounded::<PipelineMessage>(batch_size * 2);
 
     // Pass output_dir to consumer for per-file saving/publishing
-    let consumer_handle = thread::spawn(move || run_consumer(msg_rx, model_path, output_dir, batch_size));
-    let producer_handle = thread::spawn(move || run_producer(input_dir, msg_tx, producer_parallelism));
+    let consumer_handle =
+        thread::spawn(move || run_consumer(msg_rx, model_path, output_dir, batch_size));
+    let producer_handle =
+        thread::spawn(move || run_producer(input_dir, msg_tx, producer_parallelism));
 
     let _ = producer_handle
         .join()

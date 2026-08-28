@@ -76,3 +76,4 @@ Gemini.md
 *.weights
 target/
 __pycache__/
+.aider*
