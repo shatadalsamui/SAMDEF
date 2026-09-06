@@ -1915,11 +1915,13 @@ dependencies = [
 name = "gui_iced"
 version = "0.1.0"
 dependencies = [
- "bincode",
+ "anyhow",
  "iced",
+ "image 0.24.9",
  "serde",
+ "serde_json",
+ "tiff 0.9.1",
  "tokio",
- "zenoh",
 ]
 
 [[package]]
