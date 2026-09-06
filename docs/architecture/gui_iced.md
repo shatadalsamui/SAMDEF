@@ -289,7 +289,7 @@ Executes multi-layer rendering:
   - Bounding boxes are filtered by class visibility, confidence threshold, and viewport frustum clipping.
   - Drawn using `draw_hollow_box`: 4 thin solid edge rectangles (top, bottom, left, right).
   - Box interiors have no geometry drawn, remaining 100% transparent.
-  - Line thickness adapts dynamically based on zoom scale (1.0px at overview, up to 2.0px when zoomed in).
+  - Line thickness adapts dynamically with ultra-fine hairline strokes (0.40px for small vehicles, 0.50px in standard non-zoomed view, up to 1.25px when magnified).
 - **Layer 3 (Confidence & Class Badges)**:
   - Rendered when zoomed in (`scale >= 1.5 || scale_x >= 0.35`) and `show_labels` is enabled.
   - Draws a solid background tag with class name and confidence percentage.

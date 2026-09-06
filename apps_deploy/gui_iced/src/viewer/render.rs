@@ -54,10 +54,18 @@ pub fn render_viewer<Renderer>(
     // LAYER 2: Dynamic transparent annotation layer on top (only the boxes)
     let any_class_visible = class_visible.iter().any(|&v| v);
     if any_class_visible {
-        let show_badge = show_labels && (state.scale >= 1.5 || scale_x >= 0.35);
+        let show_badge = show_labels && (state.scale >= 2.0 || scale_x >= 0.40);
 
-        // Adaptive line thickness: thin (1.0px) when zoomed out, bolder (1.5-2.0px) when zoomed in
-        let border_thickness = if state.scale < 1.2 { 1.0 } else if state.scale < 3.0 { 1.5 } else { 2.0 };
+        // Ultra-fine hairline strokes: prevents clutter on dense scenes
+        let base_thickness = if state.scale <= 1.05 {
+            0.50
+        } else if state.scale < 2.0 {
+            0.75
+        } else if state.scale < 4.0 {
+            1.0
+        } else {
+            1.25
+        };
 
         renderer.with_layer(bounds, |renderer| {
             for det in detections {
@@ -82,13 +90,25 @@ pub fn render_viewer<Renderer>(
                     continue;
                 }
 
-                let color = class_color(det.class_id);
+                // Adaptive thickness: scale down for small targets (cars) so interior stays hollow
+                let thickness = if box_w < 12.0 || box_h < 12.0 {
+                    0.40_f32.min(base_thickness)
+                } else {
+                    base_thickness
+                };
 
-                // Draw bounding box: hollow with 4 solid edges, center 100% transparent
-                draw_hollow_box(renderer, box_x, box_y, box_w, box_h, border_thickness, color);
+                // Subtle alpha keeps lines crisp while avoiding heavy solid occlusion
+                let alpha = if state.scale <= 1.05 { 0.75 } else { 0.85 };
+                let color = Color {
+                    a: alpha,
+                    ..class_color(det.class_id)
+                };
+
+                // Draw bounding box: hollow with thin edges, center 100% transparent
+                draw_hollow_box(renderer, box_x, box_y, box_w, box_h, thickness, color);
 
                 // Optional label badge when zoomed in
-                if show_badge && box_w >= 24.0 {
+                if show_badge && box_w >= 28.0 {
                     let label = format!(
                         "{} {:.0}%",
                         class_name(det.class_id),
@@ -106,7 +126,7 @@ pub fn render_viewer<Renderer>(
                             width: tag_w,
                             height: tag_h,
                         },
-                        Color { a: 0.90, ..color },
+                        Color { a: 0.85, ..color },
                     );
 
                     renderer.fill_text(text::Text {
@@ -141,20 +161,24 @@ fn draw_hollow_box<Renderer: renderer::Renderer>(
     thickness: f32,
     color: Color,
 ) {
-    if w < 3.0 || h < 3.0 {
+    // For microscopic boxes when heavily zoomed out (< 2.0px), draw a tiny 1x1 sub-pixel dot
+    if w < 2.0 || h < 2.0 {
         draw_solid_rect(
             renderer,
             Rectangle {
                 x,
                 y,
-                width: w.max(2.0),
-                height: h.max(2.0),
+                width: 1.0,
+                height: 1.0,
             },
-            color,
+            Color { a: color.a * 0.40, ..color },
         );
         return;
     }
-    let t = thickness.min(w / 2.0).min(h / 2.0);
+
+    // Keep edges thin so the hollow interior is preserved
+    let t = thickness.min((w / 2.0) - 0.15).min((h / 2.0) - 0.15).max(0.25);
+
     // Top, bottom, left, right edges
     draw_solid_rect(renderer, Rectangle { x, y, width: w, height: t }, color);
     draw_solid_rect(renderer, Rectangle { x, y: y + h - t, width: w, height: t }, color);
