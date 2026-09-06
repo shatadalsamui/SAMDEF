@@ -1,7 +1,15 @@
 # SAMDEF: High-Performance Edge Computer Vision System
 
-> **Module Documentation:** For deep technical dives into the architecture, please see the individual module docs:
-> [Detector](docs/architecture/detector.md) | [DB Processor](docs/architecture/dbprocessor.md) | [Ingestor](docs/architecture/ingestor_training.md) | [Model Trainer](docs/architecture/model_trainer.md)
+[![SAMDEF GIS Viewer - Multi-Class Satellite Object Detection](https://github.com/user-attachments/assets/179307f2-57b8-4104-8903-919ac556e65c)](https://github.com/shatadalsamui/SAMDEF)
+
+*Native GIS Exploitation Viewer (`gui_iced`): Real-time multi-class vector detection over high-resolution GeoTIFF imagery.*
+
+[![SAMDEF GIS Viewer - Target Class Isolation](https://github.com/user-attachments/assets/034215d1-1b10-4cce-8867-25bf36a957f5)](https://github.com/shatadalsamui/SAMDEF)
+
+*Interactive class filtering: Isolating 3,199 small vehicles with zero GPU texture re-uploads and ultra-fine hairline strokes.*
+
+> **GitHub Repository:** [https://github.com/shatadalsamui/SAMDEF](https://github.com/shatadalsamui/SAMDEF)  
+> **Module Documentation:** [Detector](docs/architecture/detector.md) | [DB Processor](docs/architecture/dbprocessor.md) | [Ingestor](docs/architecture/ingestor_training.md) | [Model Trainer](docs/architecture/model_trainer.md) | [GIS Viewer](docs/architecture/gui_iced.md)
 
 ---
 
@@ -160,6 +168,14 @@ apps_deploy/
 │   ├── model/
 │   ├── src/
 │   │   └── modules/
+├── gui_iced/
+│   ├── docs/
+│   ├── src/
+│   │   ├── app/
+│   │   ├── io/
+│   │   ├── model/
+│   │   ├── ui/
+│   │   └── viewer/
 ├── post_processor/
 │   ├── src/
 ```
@@ -192,6 +208,8 @@ flowchart TD
     B -->|Output JSON| E[Post Processor]
     A --> E
     E --> F[Annotated Images]
+    B -->|Output JSON| G[GIS Viewer - gui_iced]
+    A --> G
 ```
 
 **Key architectural highlights:**
@@ -217,6 +235,7 @@ The SAMDEF workflow consists of two main phases: **training** and **deployment**
 2. Detections are performed on GPU using ONNX models.
 3. Results are stored in the database via DB Processor.
 4. Post Processor visualizes detections by annotating images with bounding boxes.
+5. Interactive GIS Viewer (`gui_iced`) enables analysts to inspect raw GeoTIFFs with real-time vector overlays, sub-pixel pan/zoom, class filtering, and telemetry.
 
 ---
 
@@ -258,6 +277,30 @@ The SAMDEF workflow consists of two main phases: **training** and **deployment**
   - `src/`: Rust source code for database and Zenoh integration.
   - `docs/`: Documentation for database schema and integration.
 
+#### gui_iced (Interactive GIS Viewer & Exploitation GUI)
+- **Purpose:** Native, high-performance desktop GIS exploitation tool for interactive visualization and inspection of ultra-high-resolution satellite imagery (GeoTIFF) with vector detection overlays.
+- **How it works:**
+  - Fast-decodes multi-gigabyte Planar Configuration 2 GeoTIFF imagery directly into standard memory formats.
+  - Slices the satellite raster onto the GPU texture atlas while dynamically overlaying hollow vector bounding boxes via Iced's quad rendering pipeline (zero texture re-uploads, 0ms filter latency).
+  - Implements sub-pixel affine zooming centered on the mouse cursor, clamped viewport panning, and continuous pixel coordinate telemetry.
+  - Features hybrid quick-search and a compact closed-by-default dropdown menu to navigate hundreds of datasets without screen clutter.
+- **Key features:** VS Code / Zed Dark styling, ultra-fine hairline strokes (0.50px overview, 0.40px for cars), instant 8-class toggle filtering, continuous confidence slider, and telemetry HUD (dimensions, target count, zoom %, image coordinates).
+- **Interface Preview:**
+  
+  **Multi-Class Exploitation (3,871 detections across Buildings, Trucks, and Small Vehicles):**  
+  ![SAMDEF GIS Viewer - All Classes](https://github.com/user-attachments/assets/179307f2-57b8-4104-8903-919ac556e65c)
+
+  **Target Class Isolation (3,199 Small Vehicles isolated with ultra-fine hairline vectors):**  
+  ![SAMDEF GIS Viewer - Target Class Isolation](https://github.com/user-attachments/assets/034215d1-1b10-4cce-8867-25bf36a957f5)
+
+- **Folder structure:**
+  - `src/app/`: Application state, message handling, and async Tokio commands.
+  - `src/io/`: Planar TIFF decoder and directory/file resolution.
+  - `src/model/`: Bounding box entities and neon color taxonomy.
+  - `src/ui/`: Modular sidebar, search/dropdown navigation, class toggles, telemetry card, and custom stylesheets.
+  - `src/viewer/`: Custom `AnnotatedViewer` Iced widget, mouse/wheel event handlers, and multi-layer rendering pipeline.
+  - `docs/`: Architecture specification (`docs/architecture.md`).
+
 ---
 
 ### Training Modules
@@ -288,12 +331,12 @@ The SAMDEF workflow consists of two main phases: **training** and **deployment**
 
 ## Tech Stack
 
-- **Languages:** Rust (deployment, data processing), Python (AI/ML training)
-- **Frameworks:** YOLO (training), ONNX (inference)
+- **Languages:** Rust (deployment, data processing, native GUI), Python (AI/ML training)
+- **Frameworks:** YOLO (training), ONNX (inference), Iced (native Rust GUI & WGPU/GLES rendering)
 - **Databases:** PostgreSQL
 - **Messaging:** Zenoh (peer mode)
 - **Hardware Acceleration:** CUDA GPUs
-- **Image Formats:** GeoTIFF
+- **Image Formats:** GeoTIFF (including Planar Configuration 2)
 
 ---
 
@@ -342,6 +385,11 @@ To run the main detection and deployment pipeline, launch the Rust microservices
 3. **Run the Post Processor (Image Annotation):**
    ```bash
    cd apps_deploy/post_processor
+   cargo run --release
+   ```
+4. **Launch the Interactive GIS Viewer (gui_iced):**
+   ```bash
+   cd apps_deploy/gui_iced
    cargo run --release
    ```
 
