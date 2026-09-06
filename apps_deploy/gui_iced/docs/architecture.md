@@ -65,10 +65,10 @@ To prevent missing-glyph placeholder boxes (empty rectangles) caused by missing 
 ### Interface Screenshots
 
 **Multi-Class Exploitation (3,871 Detections across Buildings, Trucks, and Small Vehicles):**  
-![SAMDEF GIS Viewer - All Classes](https://github.com/user-attachments/assets/179307f2-57b8-4104-8903-919ac556e65c)
+<a href="https://github.com/user-attachments/assets/179307f2-57b8-4104-8903-919ac556e65c" target="_blank"><img src="https://github.com/user-attachments/assets/179307f2-57b8-4104-8903-919ac556e65c" alt="SAMDEF GIS Viewer - All Classes" /></a>
 
 **Target Class Isolation (3,199 Small Vehicles with Ultra-Fine Hairline Vectors):**  
-![SAMDEF GIS Viewer - Target Class Isolation](https://github.com/user-attachments/assets/034215d1-1b10-4cce-8867-25bf36a957f5)
+<a href="https://github.com/user-attachments/assets/034215d1-1b10-4cce-8867-25bf36a957f5" target="_blank"><img src="https://github.com/user-attachments/assets/034215d1-1b10-4cce-8867-25bf36a957f5" alt="SAMDEF GIS Viewer - Target Class Isolation" /></a>
 
 ### Component Data Flow
 

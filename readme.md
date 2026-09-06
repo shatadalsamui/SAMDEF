@@ -1,12 +1,12 @@
 # SAMDEF: High-Performance Edge Computer Vision System
 
-[![SAMDEF GIS Viewer - Multi-Class Satellite Object Detection](https://github.com/user-attachments/assets/179307f2-57b8-4104-8903-919ac556e65c)](https://github.com/shatadalsamui/SAMDEF)
+<a href="https://github.com/user-attachments/assets/179307f2-57b8-4104-8903-919ac556e65c" target="_blank"><img src="https://github.com/user-attachments/assets/179307f2-57b8-4104-8903-919ac556e65c" alt="SAMDEF GIS Viewer - Multi-Class Satellite Object Detection" /></a>
 
-*Native GIS Exploitation Viewer (`gui_iced`): Real-time multi-class vector detection over high-resolution GeoTIFF imagery.*
+*Native GIS Exploitation Viewer (`gui_iced`): Real-time multi-class vector detection over high-resolution GeoTIFF imagery (click to view full resolution).*
 
-[![SAMDEF GIS Viewer - Target Class Isolation](https://github.com/user-attachments/assets/034215d1-1b10-4cce-8867-25bf36a957f5)](https://github.com/shatadalsamui/SAMDEF)
+<a href="https://github.com/user-attachments/assets/034215d1-1b10-4cce-8867-25bf36a957f5" target="_blank"><img src="https://github.com/user-attachments/assets/034215d1-1b10-4cce-8867-25bf36a957f5" alt="SAMDEF GIS Viewer - Target Class Isolation" /></a>
 
-*Interactive class filtering: Isolating 3,199 small vehicles with zero GPU texture re-uploads and ultra-fine hairline strokes.*
+*Interactive class filtering: Isolating 3,199 small vehicles with zero GPU texture re-uploads and ultra-fine hairline strokes (click to view full resolution).*
 
 > **GitHub Repository:** [https://github.com/shatadalsamui/SAMDEF](https://github.com/shatadalsamui/SAMDEF)  
 > **Module Documentation:** [Detector](docs/architecture/detector.md) | [DB Processor](docs/architecture/dbprocessor.md) | [Ingestor](docs/architecture/ingestor_training.md) | [Model Trainer](docs/architecture/model_trainer.md) | [GIS Viewer](docs/architecture/gui_iced.md)
@@ -285,14 +285,6 @@ The SAMDEF workflow consists of two main phases: **training** and **deployment**
   - Implements sub-pixel affine zooming centered on the mouse cursor, clamped viewport panning, and continuous pixel coordinate telemetry.
   - Features hybrid quick-search and a compact closed-by-default dropdown menu to navigate hundreds of datasets without screen clutter.
 - **Key features:** VS Code / Zed Dark styling, ultra-fine hairline strokes (0.50px overview, 0.40px for cars), instant 8-class toggle filtering, continuous confidence slider, and telemetry HUD (dimensions, target count, zoom %, image coordinates).
-- **Interface Preview:**
-  
-  **Multi-Class Exploitation (3,871 detections across Buildings, Trucks, and Small Vehicles):**  
-  ![SAMDEF GIS Viewer - All Classes](https://github.com/user-attachments/assets/179307f2-57b8-4104-8903-919ac556e65c)
-
-  **Target Class Isolation (3,199 Small Vehicles isolated with ultra-fine hairline vectors):**  
-  ![SAMDEF GIS Viewer - Target Class Isolation](https://github.com/user-attachments/assets/034215d1-1b10-4cce-8867-25bf36a957f5)
-
 - **Folder structure:**
   - `src/app/`: Application state, message handling, and async Tokio commands.
   - `src/io/`: Planar TIFF decoder and directory/file resolution.
