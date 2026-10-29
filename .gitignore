@@ -71,6 +71,8 @@ Gemini.md
 # AI Exclude Rules
 .aiexclude
 .antigravityignore
+.agents/
+.codex/
 *.onnx
 *.bin
 *.weights

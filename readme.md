@@ -28,11 +28,11 @@
 
 ## Overview
 
-**SAMDEF** is a high-performance, modular monolith platform designed for efficient edge computer vision and massive-scale image processing. Optimized for on-premise execution without reliance on cloud or SaaS infrastructure, it enables high-throughput automated object detection on exceptionally large imagery (such as massive GeoTIFFs).
+**SAMDEF** is a high-performance, modular monolith platform designed for efficient edge computer vision and massive-scale image processing. Engineered to operate **fully air-gapped** and optimized for on-premise, mission-critical execution without reliance on cloud or external SaaS infrastructure, it enables high-throughput automated object detection on exceptionally large imagery (such as massive GeoTIFFs).
 
 The system automates the data-intensive groundwork of transforming raw pixels into structured, geospatial knowledge. By leveraging a Zero-Wait GPU Pipeline, it ensures that while one batch of imagery is analyzed, the next is already being pre-processed in memory, maximizing hardware utilization. It provides operators with the critical "What" and "Where" by mapping every detected object (e.g., vehicles, infrastructure, specific assets) to its exact Global Geospatial Coordinates and suppressing duplicates via Spatial Grid NMS.
 
-By delivering high-fidelity metadata and object locations directly to a local database in near real-time, SAMDEF acts as a high-speed programmatic scout for environments that are far too large for manual human review.
+By delivering high-fidelity metadata and object locations directly to a local, air-gapped database in near real-time, SAMDEF acts as a high-speed programmatic scout for defense, intelligence, and remote tactical environments that are far too large for manual human review.
 
 ## Use Cases
 
@@ -40,7 +40,7 @@ SAMDEF is optimized for massive geospatial and satellite imagery—processing di
 
 ### Off-Grid Surveillance & Remote Operations
 SAMDEF is engineered for remote environments where cloud connectivity is unavailable or compromised. It is highly effective for processing satellite or high-altitude drone imagery directly at the edge:
-- **Fully Offline Execution:** Operates 100% locally on field hardware, requiring absolutely no internet connection to process massive GeoTIFFs.
+- **Air-Gapped & Offline Execution:** Operates 100% locally on isolated field hardware with zero external network dependencies, requiring no internet connectivity to process massive GeoTIFFs.
 - **High-Altitude Analytics:** Rapidly scans imagery from drones or satellites, converting raw pixels into actionable intelligence in near real-time.
 - **Geospatial Contextualization:** Automatically maps detected objects of interest (e.g., vehicles, equipment, structures) to exact global coordinates, providing operators with instant situational awareness in the field.
 

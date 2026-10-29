@@ -125,7 +125,7 @@ pub fn parse_output(output: ArrayView2<f16>) -> Vec<Detection> {
     const MAX_COORD: f32 = IMG_SIZE - 1.0;
 
     // CONFIDENCE THRESHOLDS (0.0 to 1.0)
-    const CLASS_THRESHOLDS: [f32; 8] = [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2];
+    const CLASS_THRESHOLDS: [f32; 8] = [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01];
 
     for proposal in output.rows() {
         let confidence = proposal[4].to_f32();
