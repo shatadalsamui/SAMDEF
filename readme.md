@@ -2,14 +2,14 @@
 
 <a href="https://github.com/user-attachments/assets/179307f2-57b8-4104-8903-919ac556e65c" target="_blank"><img src="https://github.com/user-attachments/assets/179307f2-57b8-4104-8903-919ac556e65c" alt="SAMDEF GIS Viewer - Multi-Class Satellite Object Detection" /></a>
 
-*Native GIS Exploitation Viewer (`gui_iced`): Real-time multi-class vector detection over high-resolution GeoTIFF imagery (click to view full resolution).*
+*Native GIS Exploitation Viewer (`gui_gpui`): Real-time multi-class vector detection over high-resolution GeoTIFF imagery (click to view full resolution).*
 
 <a href="https://github.com/user-attachments/assets/034215d1-1b10-4cce-8867-25bf36a957f5" target="_blank"><img src="https://github.com/user-attachments/assets/034215d1-1b10-4cce-8867-25bf36a957f5" alt="SAMDEF GIS Viewer - Target Class Isolation" /></a>
 
 *Interactive class filtering: Isolating 3,199 small vehicles with zero GPU texture re-uploads and ultra-fine hairline strokes (click to view full resolution).*
 
 > **GitHub Repository:** [https://github.com/shatadalsamui/SAMDEF](https://github.com/shatadalsamui/SAMDEF)  
-> **Module Documentation:** [Detector](docs/architecture/detector.md) | [DB Processor](docs/architecture/dbprocessor.md) | [Ingestor](docs/architecture/ingestor_training.md) | [Model Trainer](docs/architecture/model_trainer.md) | [GIS Viewer](docs/architecture/gui_iced.md)
+> **Module Documentation:** [Detector](docs/architecture/detector.md) | [DB Processor](docs/architecture/dbprocessor.md) | [Ingestor](docs/architecture/ingestor_training.md) | [Model Trainer](docs/architecture/model_trainer.md) | [GIS Viewer](docs/architecture/gui_gpui.md)
 
 ---
 
@@ -168,8 +168,9 @@ apps_deploy/
 │   ├── model/
 │   ├── src/
 │   │   └── modules/
-├── gui_iced/
-│   ├── docs/
+├── gui_gpui/
+│   ├── README.md
+│   ├── build.rs
 │   ├── src/
 │   │   ├── app/
 │   │   ├── io/
@@ -208,7 +209,7 @@ flowchart TD
     B -->|Output JSON| E[Post Processor]
     A --> E
     E --> F[Annotated Images]
-    B -->|Output JSON| G[GIS Viewer - gui_iced]
+    B -->|Output JSON| G[GIS Viewer - gui_gpui]
     A --> G
 ```
 
@@ -235,7 +236,7 @@ The SAMDEF workflow consists of two main phases: **training** and **deployment**
 2. Detections are performed on GPU using ONNX models.
 3. Results are stored in the database via DB Processor.
 4. Post Processor visualizes detections by annotating images with bounding boxes.
-5. Interactive GIS Viewer (`gui_iced`) enables analysts to inspect raw GeoTIFFs with real-time vector overlays, sub-pixel pan/zoom, class filtering, and telemetry.
+5. Interactive GIS Viewer (`gui_gpui`) enables analysts to inspect raw GeoTIFFs with real-time GPU vector overlays, sub-pixel pan/zoom, radar minimap, geodesic ruler, class soloing, and multi-format GIS exports.
 
 ---
 
@@ -277,21 +278,21 @@ The SAMDEF workflow consists of two main phases: **training** and **deployment**
   - `src/`: Rust source code for database and Zenoh integration.
   - `docs/`: Documentation for database schema and integration.
 
-#### gui_iced (Interactive GIS Viewer & Exploitation GUI)
-- **Purpose:** Native, high-performance desktop GIS exploitation tool for interactive visualization and inspection of ultra-high-resolution satellite imagery (GeoTIFF) with vector detection overlays.
+#### gui_gpui (Interactive GIS Viewer & Exploitation GUI)
+- **Purpose:** Native, GPU-accelerated desktop GIS exploitation workstation built on GPUI (Vulkan/Blade) for interactive inspection and tactical analysis of ultra-high-resolution satellite imagery (GeoTIFF) with vector detection overlays.
 - **How it works:**
-  - Fast-decodes multi-gigabyte Planar Configuration 2 GeoTIFF imagery directly into standard memory formats.
-  - Slices the satellite raster onto the GPU texture atlas while dynamically overlaying hollow vector bounding boxes via Iced's quad rendering pipeline (zero texture re-uploads, 0ms filter latency).
-  - Implements sub-pixel affine zooming centered on the mouse cursor, clamped viewport panning, and continuous pixel coordinate telemetry.
-  - Features hybrid quick-search and a compact closed-by-default dropdown menu to navigate hundreds of datasets without screen clutter.
-- **Key features:** VS Code / Zed Dark styling, ultra-fine hairline strokes (0.50px overview, 0.40px for cars), instant 8-class toggle filtering, continuous confidence slider, and telemetry HUD (dimensions, target count, zoom %, image coordinates).
+  - Fast-decodes multi-gigabyte Planar Configuration 2 and chunky GeoTIFF strips directly into zero-copy BGRA GPU textures.
+  - Renders ordered immediate-mode GPU passes (`paint_layer`) for the satellite raster, dynamic hollow neon vector bounding boxes, GPU-shaped class/confidence badges, and geodesic ruler overlays with zero texture re-uploads.
+  - Implements sub-pixel cursor-invariant zooming, `1:1` native pixel inspection, interactive radar minimap with frustum tracking, geodesic Haversine distance/bearing measurement, and GDAL 6-parameter WGS-84 coordinate projection.
+  - Features instant file search, closed-by-default dropdown selection, floating target inspector HUD, collapsible detection table drawer, and GeoJSON/CSV/Markdown intelligence exporters.
+- **Key features:** Zed / VS Code Dark styling, client-side Wayland/X11 window decorations, 8-class visibility toggles + Solo isolation, interactive confidence slider, live WGS-84 Decimal Degrees / DMS / GSD status bar, and one-click GIS exports.
 - **Folder structure:**
-  - `src/app/`: Application state, message handling, and async Tokio commands.
-  - `src/io/`: Planar TIFF decoder and directory/file resolution.
-  - `src/model/`: Bounding box entities and neon color taxonomy.
-  - `src/ui/`: Modular sidebar, search/dropdown navigation, class toggles, telemetry card, and custom stylesheets.
-  - `src/viewer/`: Custom `AnnotatedViewer` Iced widget, mouse/wheel event handlers, and multi-layer rendering pipeline.
-  - `docs/`: Architecture specification (`docs/architecture.md`).
+  - `src/app/`: Application state, async GeoTIFF/JSON loader, event dispatch, and text input handling.
+  - `src/io/`: Planar/chunky TIFF strip decoder, dataset scanner, and GeoJSON/CSV/Markdown exporters.
+  - `src/model/`: Detection schema entities and 8-class neon color taxonomy.
+  - `src/ui/`: Client-side titlebar, toolbar, status bar, radar minimap, target inspector, table drawer, and modular sidebar.
+  - `src/viewer/`: Sub-pixel coordinate math, priority hit-testing, and 5-layer GPU rendering pipeline.
+  - Documentation: `README.md` and [`docs/architecture/gui_gpui.md`](docs/architecture/gui_gpui.md).
 
 ---
 
@@ -324,7 +325,7 @@ The SAMDEF workflow consists of two main phases: **training** and **deployment**
 ## Tech Stack
 
 - **Languages:** Rust (deployment, data processing, native GUI), Python (AI/ML training)
-- **Frameworks:** YOLO (training), ONNX (inference), Iced (native Rust GUI & WGPU/GLES rendering)
+- **Frameworks:** YOLO (training), ONNX (inference), GPUI (native Rust GPU UI via Vulkan/Blade)
 - **Databases:** PostgreSQL
 - **Messaging:** Zenoh (peer mode)
 - **Hardware Acceleration:** CUDA GPUs
@@ -379,9 +380,9 @@ To run the main detection and deployment pipeline, launch the Rust microservices
    cd apps_deploy/post_processor
    cargo run --release
    ```
-4. **Launch the Interactive GIS Viewer (gui_iced):**
+4. **Launch the Interactive GIS Viewer (gui_gpui):**
    ```bash
-   cd apps_deploy/gui_iced
+   cd apps_deploy/gui_gpui
    cargo run --release
    ```
 

@@ -27,7 +27,7 @@ This microservice is optimized for throughput and scalability, leveraging multi-
 ```
 +-------------------+      +-------------------+      +-------------------+      +-------------------+      +-------------------+      +-------------------+
 |                   |      |                   |      |                   |      |                   |      |                   |      |                   |
-|   Producer Thread | ---> |   Channel (Queue) | ---> |  Consumer Thread  | ---> |   Output/Publish  | ---> |   DB Processor    | ---> |   Rust Iced GUI   |
+|   Producer Thread | ---> |   Channel (Queue) | ---> |  Consumer Thread  | ---> |   Output/Publish  | ---> |   DB Processor    | ---> |   Rust GPUI GUI   |
 |                   |      |                   |      |                   |      |                   |      |                   |      |                   |
 +-------------------+      +-------------------+      +-------------------+      +-------------------+      +-------------------+      +-------------------+
         |                        |                           |                          |                       |                          |
