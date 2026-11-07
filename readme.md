@@ -1,12 +1,28 @@
 # SAMDEF: High-Performance Edge Computer Vision System
 
-<a href="https://github.com/user-attachments/assets/179307f2-57b8-4104-8903-919ac556e65c" target="_blank"><img src="https://github.com/user-attachments/assets/179307f2-57b8-4104-8903-919ac556e65c" alt="SAMDEF GIS Viewer - Multi-Class Satellite Object Detection" /></a>
+<a href="https://github.com/user-attachments/assets/ad3f7a0d-a2a0-4783-bb32-b2e8836c4f26" target="_blank"><img src="https://github.com/user-attachments/assets/ad3f7a0d-a2a0-4783-bb32-b2e8836c4f26" alt="SAMDEF GIS Viewer (gui_gpui) - Multi-Class Satellite Object Detection" /></a>
 
-*Native GIS Exploitation Viewer (`gui_gpui`): Real-time multi-class vector detection over high-resolution GeoTIFF imagery (click to view full resolution).*
+*Native GIS Exploitation Viewer (`gui_gpui`): Real-time multi-class GPU vector detection (1,256 active targets) with live radar minimap over high-resolution GeoTIFF imagery (click to view full resolution).*
 
-<a href="https://github.com/user-attachments/assets/034215d1-1b10-4cce-8867-25bf36a957f5" target="_blank"><img src="https://github.com/user-attachments/assets/034215d1-1b10-4cce-8867-25bf36a957f5" alt="SAMDEF GIS Viewer - Target Class Isolation" /></a>
+<a href="https://github.com/user-attachments/assets/9e9ac8ca-a99f-45ad-a47c-54137e0c3799" target="_blank"><img src="https://github.com/user-attachments/assets/9e9ac8ca-a99f-45ad-a47c-54137e0c3799" alt="SAMDEF GIS Viewer (gui_gpui) - Target Class Solo Isolation" /></a>
 
-*Interactive class filtering: Isolating 3,199 small vehicles with zero GPU texture re-uploads and ultra-fine hairline strokes (click to view full resolution).*
+*Instant class soloing: Isolating 469 building footprints with zero GPU texture re-uploads and synchronized radar minimap blips (click to view full resolution).*
+
+<a href="https://github.com/user-attachments/assets/a4848c7f-4fba-41ee-82fa-af0239383d62" target="_blank"><img src="https://github.com/user-attachments/assets/a4848c7f-4fba-41ee-82fa-af0239383d62" alt="SAMDEF GIS Viewer (gui_gpui) - Sub-Pixel Zoom & Target Inspector HUD" /></a>
+
+*1600% sub-pixel magnification & pinned Target Inspector HUD: Inspecting construction assets with GPU-shaped class/confidence badges, ground dimensions (8.6m x 7.7m), and WGS-84 coordinates (click to view full resolution).*
+
+<a href="https://github.com/user-attachments/assets/8d5b65b3-2b49-4116-92bd-b0cd3b4987a6" target="_blank"><img src="https://github.com/user-attachments/assets/8d5b65b3-2b49-4116-92bd-b0cd3b4987a6" alt="SAMDEF GIS Viewer (gui_gpui) - Target Exploitation Table & Heavy Vehicle Inspection" /></a>
+
+*Target Exploitation Table & class filtering: Inspecting isolated long-truck detections at 873% zoom with live tabular telemetry and one-click GeoJSON/CSV exports (click to view full resolution).*
+
+<a href="https://github.com/user-attachments/assets/feea03ec-4c42-4655-a05a-223d38f206ca" target="_blank"><img src="https://github.com/user-attachments/assets/feea03ec-4c42-4655-a05a-223d38f206ca" alt="SAMDEF GIS Viewer (gui_gpui) - Interactive Table Focus & Highway Target Tracking" /></a>
+
+*One-click target focus: Jumping directly from the exploitation table to highway vehicle detections (#2132, 186.9 m2 footprint) with live radar frustum tracking (click to view full resolution).*
+
+<a href="https://github.com/user-attachments/assets/efd453e0-1170-4e1d-8f95-64031d872b51" target="_blank"><img src="https://github.com/user-attachments/assets/efd453e0-1170-4e1d-8f95-64031d872b51" alt="SAMDEF GIS Viewer (gui_gpui) - Geodesic Haversine Distance & Azimuth Ruler" /></a>
+
+*Interactive Geodesic Ruler (`Ruler [M]`): Measuring true WGS-84 Haversine ground distance and forward azimuth (121.0 m | 243.7°) directly across satellite imagery (click to view full resolution).*
 
 > **GitHub Repository:** [https://github.com/shatadalsamui/SAMDEF](https://github.com/shatadalsamui/SAMDEF)  
 > **Module Documentation:** [Detector](docs/architecture/detector.md) | [DB Processor](docs/architecture/dbprocessor.md) | [Ingestor](docs/architecture/ingestor_training.md) | [Model Trainer](docs/architecture/model_trainer.md) | [GIS Viewer](docs/architecture/gui_gpui.md)
