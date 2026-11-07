@@ -4,7 +4,7 @@ A high-performance, GPU-accelerated Geospatial Intelligence (GEOINT) and Target 
 
 ---
 
-## 🛰️ Overview & Comparison with `gui_iced`
+## Overview & Comparison with `gui_iced`
 
 While `gui_iced` provides a solid baseline for visualizing detection outputs, `gui_gpui` is designed for high-throughput, mission-critical satellite image exploitation with direct GPU quad-painting, zero-allocation TIFF strip decoding, and deep geospatial telemetry.
 
@@ -24,7 +24,7 @@ While `gui_iced` provides a solid baseline for visualizing detection outputs, `g
 
 ---
 
-## 🎯 8 NEON Target Classes
+## 8 NEON Target Classes
 
 The viewer preserves the standard 8-class SAMDEF detection schema with high-visibility neon vector overlays:
 
@@ -41,7 +41,7 @@ The viewer preserves the standard 8-class SAMDEF detection schema with high-visi
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
 ### 1. Viewport & Vector Rendering Engine
 - **Infinite Sub-Pixel Zoom & Pan**: Smooth exponential zooming (0.05x to 35x) anchored to the cursor position, with panning via mouse drag or WASD/arrow keys.
@@ -70,7 +70,7 @@ The viewer preserves the standard 8-class SAMDEF detection schema with high-visi
 
 ---
 
-## ⌨️ Hotkey Controls
+## Hotkey Controls
 
 | Key | Action |
 | :--- | :--- |
@@ -94,7 +94,7 @@ The viewer preserves the standard 8-class SAMDEF detection schema with high-visi
 
 ---
 
-## 📁 Modular SRP Architecture (`<= 260` lines per file)
+## Modular SRP Architecture (`<= 275` lines per file)
 
 ```text
 apps_deploy/gui_gpui/
@@ -106,6 +106,7 @@ apps_deploy/gui_gpui/
     ├── app/
     │   ├── mod.rs              # SamdefApp state, async GeoTIFF/JSON loader & navigation
     │   ├── events.rs           # Smooth scroll zoom, drag/click disambiguation & hotkeys
+    │   ├── input_keys.rs       # Focusable text input editing, paste & file search
     │   └── view.rs             # Root Render tree & live viewport bounds capture
     ├── model/
     │   ├── detection.rs        # BBoxCoords, FinalOutput & DisplayDetection
@@ -120,7 +121,8 @@ apps_deploy/gui_gpui/
     │   ├── render.rs           # Ordered multi-layer GPU raster & neon box painter
     │   └── overlays.rs         # GPU-shaped text badges & geodesic ruler layers
     └── ui/
-        ├── theme.rs            # Dark GIS palette & reusable button/row primitives
+        ├── theme.rs            # Dark GIS palette & reusable button/input primitives
+        ├── titlebar.rs         # Client-side window titlebar & edge resize handles
         ├── toolbar.rs          # Fit, 1:1, center-zoom, Ruler, B/W, Radar & Table bar
         ├── status_bar.rs       # Bottom QGIS-style live Lat/Lon, DMS, Pixel & GSD bar
         ├── inspector.rs        # Occluded floating target exploitation HUD card
@@ -128,7 +130,7 @@ apps_deploy/gui_gpui/
         ├── table_drawer.rs     # Occluded bottom detection table & 1-click focus
         └── sidebar/
             ├── mod.rs          # Left sidebar container & header
-            ├── file_nav.rs     # Dataset scanner & full scrollable file list
+            ├── file_nav.rs     # Dataset scanner, instant search & dropdown picker
             ├── class_panel.rs  # 8-class visibility toggles, counts & toggleable Solo
             ├── confidence_panel.rs # Interactive drag/click slider & ASCII steppers
             └── telemetry_export.rs # Live scene GIS telemetry & export triggers
@@ -136,7 +138,7 @@ apps_deploy/gui_gpui/
 
 ---
 
-## 🔨 Building & Running
+## Building & Running
 
 To run unit tests:
 ```bash

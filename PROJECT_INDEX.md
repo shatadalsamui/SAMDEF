@@ -17,7 +17,7 @@ Machine-readable index of verified file paths for local AI models and coding age
 ### docs/
 - `docs/architecture/detector.md` — Detector pipeline architecture & tiling.
 - `docs/architecture/dbprocessor.md` — DB processor & PostGIS spatial storage.
-- `docs/architecture/gui_iced.md` — Native GIS Viewer architecture.
+- `docs/architecture/gui_gpui.md` — GPUI GIS Exploitation Viewer architecture.
 - `docs/architecture/ingestor_training.md` — Ingestor & training flow.
 - `docs/architecture/model_trainer.md` — YOLO training architecture.
 - `docs/drawingscript.md` — Shell script to draw boxes on imagery.
@@ -64,34 +64,41 @@ Machine-readable index of verified file paths for local AI models and coding age
 - `apps_deploy/db_processor/src/modules/writer/queries.rs` — SQL insert queries for PostGIS geometry.
 - `apps_deploy/db_processor/src/modules/writer/zenoh_subscriber.rs` — Zenoh subscriber handler.
 
-### apps_deploy/gui_iced/ (GIS Desktop Viewer)
-- `apps_deploy/gui_iced/Cargo.toml` — Crate manifest (iced, tiff, image).
-- `apps_deploy/gui_iced/Cargo.lock` — Locked dependency versions.
-- `apps_deploy/gui_iced/docs/architecture.md` — Zero-allocation vector layer & UI design.
-- `apps_deploy/gui_iced/src/main.rs` — Entry point (iced Application runner).
-- `apps_deploy/gui_iced/src/app/mod.rs` — App submodule export.
-- `apps_deploy/gui_iced/src/app/state.rs` — Main application state struct.
-- `apps_deploy/gui_iced/src/app/message.rs` — UI message enum.
-- `apps_deploy/gui_iced/src/app/update.rs` — State transition & async command handlers.
-- `apps_deploy/gui_iced/src/io/mod.rs` — IO submodule export.
-- `apps_deploy/gui_iced/src/io/file_scanner.rs` — Directory scan & TIFF path resolution.
-- `apps_deploy/gui_iced/src/io/tiff_loader.rs` — Planar TIFF decoder to GPU textures.
-- `apps_deploy/gui_iced/src/model/mod.rs` — Model submodule export.
-- `apps_deploy/gui_iced/src/model/detection.rs` — Bounding box & detection data structs.
-- `apps_deploy/gui_iced/src/model/palette.rs` — Neon class color mappings.
-- `apps_deploy/gui_iced/src/ui/mod.rs` — UI components export.
-- `apps_deploy/gui_iced/src/ui/class_filters.rs` — Class toggles & confidence threshold slider.
-- `apps_deploy/gui_iced/src/ui/file_nav.rs` — Search bar, dataset dropdown, prev/next buttons.
-- `apps_deploy/gui_iced/src/ui/quick_actions.rs` — Select all / clear all class filters.
-- `apps_deploy/gui_iced/src/ui/sidebar.rs` — Sidebar layout container.
-- `apps_deploy/gui_iced/src/ui/style.rs` — VS Code / Zed Dark editor styling sheets.
-- `apps_deploy/gui_iced/src/ui/telemetry.rs` — Telemetry HUD (zoom, coords, box counts).
-- `apps_deploy/gui_iced/src/ui/toolbar.rs` — Top toolbar layout.
-- `apps_deploy/gui_iced/src/viewer/mod.rs` — Viewer widget submodules export.
-- `apps_deploy/gui_iced/src/viewer/widget.rs` — Custom low-level iced viewer widget.
-- `apps_deploy/gui_iced/src/viewer/state.rs` — Coordinate projection & viewer state.
-- `apps_deploy/gui_iced/src/viewer/events.rs` — Sub-pixel mouse pan and scroll-wheel zoom math.
-- `apps_deploy/gui_iced/src/viewer/render.rs` — Multi-layer renderer (raster texture + hollow vector quads).
+### apps_deploy/gui_gpui/ (GIS Exploitation Viewer - GPUI)
+- `apps_deploy/gui_gpui/Cargo.toml` — Crate manifest (gpui, serde, image, tiff).
+- `apps_deploy/gui_gpui/build.rs` — Self-healing Linux XCB/XKB multiarch linker symlink resolver.
+- `apps_deploy/gui_gpui/README.md` — Exploitation manual, hotkeys, and SRP module layout.
+- `apps_deploy/gui_gpui/src/main.rs` — Entry point (maximized CSD GPUI window & keystroke observer).
+- `apps_deploy/gui_gpui/src/geo.rs` — GDAL 6-param affine transform, DMS formatter & Haversine geodesy.
+- `apps_deploy/gui_gpui/src/app/mod.rs` — SamdefApp state, async GeoTIFF/JSON loader & navigation.
+- `apps_deploy/gui_gpui/src/app/events.rs` — Smooth scroll zoom, drag/click disambiguation & map hotkeys.
+- `apps_deploy/gui_gpui/src/app/input_keys.rs` — Focusable text input editing, clipboard paste & file search.
+- `apps_deploy/gui_gpui/src/app/view.rs` — Root Render tree & live viewport bounds capture.
+- `apps_deploy/gui_gpui/src/io/mod.rs` — IO submodule exports.
+- `apps_deploy/gui_gpui/src/io/file_scanner.rs` — Directory scan & GeoTIFF path resolution.
+- `apps_deploy/gui_gpui/src/io/tiff_loader.rs` — Planar Config 2 & chunky BGRA GeoTIFF strip decoder.
+- `apps_deploy/gui_gpui/src/io/exporter.rs` — GeoJSON, CSV & Markdown intelligence report exporters.
+- `apps_deploy/gui_gpui/src/model/mod.rs` — Model submodule exports.
+- `apps_deploy/gui_gpui/src/model/detection.rs` — FinalOutput JSON schema & ground footprint calculations.
+- `apps_deploy/gui_gpui/src/model/palette.rs` — 8 neon class colors & RGBA/HSLA helpers.
+- `apps_deploy/gui_gpui/src/ui/mod.rs` — UI component module exports.
+- `apps_deploy/gui_gpui/src/ui/theme.rs` — Dark GIS color tokens & reusable button/input primitives.
+- `apps_deploy/gui_gpui/src/ui/titlebar.rs` — Client-side window titlebar (Move/Min/Max/F11/Close) & resize strips.
+- `apps_deploy/gui_gpui/src/ui/toolbar.rs` — Top bar (Fit, 1:1, Zoom, Ruler, B/W, Radar, Table).
+- `apps_deploy/gui_gpui/src/ui/status_bar.rs` — Bottom QGIS-style live Lat/Lon, DMS, Pixel & GSD bar.
+- `apps_deploy/gui_gpui/src/ui/minimap.rs` — Interactive radar thumbnail, neon target blips & cyan frustum.
+- `apps_deploy/gui_gpui/src/ui/inspector.rs` — Occluded hover/pinned target exploitation HUD card.
+- `apps_deploy/gui_gpui/src/ui/table_drawer.rs` — Occluded bottom detection table drawer & live search filter.
+- `apps_deploy/gui_gpui/src/ui/sidebar/mod.rs` — Scrollable left sidebar container & header.
+- `apps_deploy/gui_gpui/src/ui/sidebar/file_nav.rs` — Editable dir scanner, instant file search & dropdown picker.
+- `apps_deploy/gui_gpui/src/ui/sidebar/class_panel.rs` — 8-class visibility toggles, counts & toggleable Solo.
+- `apps_deploy/gui_gpui/src/ui/sidebar/confidence_panel.rs` — Interactive drag/click confidence slider & ASCII steppers.
+- `apps_deploy/gui_gpui/src/ui/sidebar/telemetry_export.rs` — Scene GIS telemetry card & export triggers.
+- `apps_deploy/gui_gpui/src/viewer/mod.rs` — Viewer module exports.
+- `apps_deploy/gui_gpui/src/viewer/state.rs` — Sub-pixel cursor-invariant zoom math & coordinate projection.
+- `apps_deploy/gui_gpui/src/viewer/hit_test.rs` — Priority smallest-area target hit-testing & unit tests.
+- `apps_deploy/gui_gpui/src/viewer/render.rs` — Ordered GPU layers for GeoTIFF raster & neon hollow boxes.
+- `apps_deploy/gui_gpui/src/viewer/overlays.rs` — GPU-shaped class/confidence badges & geodesic ruler layers.
 
 ### apps_deploy/post_processor/ (Annotation Renderer)
 - `apps_deploy/post_processor/Cargo.toml` — Crate manifest (image, imageproc, tiff).
@@ -140,7 +147,7 @@ Machine-readable index of verified file paths for local AI models and coding age
 ## 2. Application Entry Points
 - `apps_deploy/detector/src/main.rs` — Detector (producer/consumer inference engine).
 - `apps_deploy/db_processor/src/main.rs` — DB Processor (Zenoh subscriber -> PostGIS).
-- `apps_deploy/gui_iced/src/main.rs` — GUI Iced (Desktop GIS Viewer).
+- `apps_deploy/gui_gpui/src/main.rs` — GUI GPUI (GPU-accelerated Desktop GIS Exploitation Viewer).
 - `apps_deploy/post_processor/src/main.rs` — Post Processor (annotated PNG generator).
 - `apps_training/ingestor/src/main.rs` — Ingestor (GeoTIFF tile + YOLO label generator).
 - `apps_training/yolo_model_trainer/src/main.py` — Model Trainer (PyTorch/YOLO CLI).
@@ -153,7 +160,7 @@ Machine-readable index of verified file paths for local AI models and coding age
 | Inference pipeline / tiling | `apps_deploy/detector/src/main.rs`, `apps_deploy/detector/src/modules/io/virtual_tiler.rs`, `apps_deploy/detector/src/modules/processing/pre_processing.rs` |
 | GPU inference & NMS | `apps_deploy/detector/src/modules/processing/inference.rs`, `apps_deploy/detector/src/modules/processing/post_processing.rs` |
 | Database & Zenoh storage | `apps_deploy/db_processor/src/main.rs`, `apps_deploy/db_processor/src/modules/writer/zenoh_subscriber.rs`, `apps_deploy/db_processor/src/modules/writer/queries.rs` |
-| GUI rendering / controls | `apps_deploy/gui_iced/src/viewer/render.rs`, `apps_deploy/gui_iced/src/ui/class_filters.rs`, `apps_deploy/gui_iced/src/app/update.rs` |
+| GUI rendering / controls | `apps_deploy/gui_gpui/src/viewer/render.rs`, `apps_deploy/gui_gpui/src/ui/sidebar/file_nav.rs`, `apps_deploy/gui_gpui/src/ui/sidebar/class_panel.rs`, `apps_deploy/gui_gpui/src/app/events.rs` |
 | Dataset tiling / labeling | `apps_training/ingestor/src/main.rs`, `apps_training/ingestor/src/modules/image_utils.rs`, `apps_training/ingestor/src/modules/labeler.rs` |
 | Model training & export | `apps_training/yolo_model_trainer/src/main.py`, `apps_training/yolo_model_trainer/src/cortex/trainer.py`, `apps_training/yolo_model_trainer/src/utils/utils.py` |
 
