@@ -83,3 +83,7 @@ __pycache__/
 apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run12/weights/
 apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run14/weights/
 apps_training/yolo_model_trainer/src/SAMDEF_ISR/*/weights/
+
+# SAHI benchmark results
+baseline_comparison_SAHI/results/
+

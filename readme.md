@@ -25,11 +25,33 @@
 *Interactive Geodesic Ruler (`Ruler [M]`): Measuring true WGS-84 Haversine ground distance and forward azimuth (121.0 m | 243.7°) directly across satellite imagery (click to view full resolution).*
 
 > **GitHub Repository:** [https://github.com/shatadalsamui/SAMDEF](https://github.com/shatadalsamui/SAMDEF)  
-> **Module Documentation:** [Detector](docs/architecture/detector.md) | [DB Processor](docs/architecture/dbprocessor.md) | [Ingestor](docs/architecture/ingestor_training.md) | [Model Trainer](docs/architecture/model_trainer.md) | [GIS Viewer](docs/architecture/gui_gpui.md)
+> **Module Documentation:** [Detector Engine](apps_deploy/detector/README.md) | [SAHI Baseline](baseline_comparison_SAHI/README.md) | [DB Processor](docs/architecture/dbprocessor.md) | [Ingestor](docs/architecture/ingestor_training.md) | [Model Trainer](docs/architecture/model_trainer.md) | [GIS Viewer](docs/architecture/gui_gpui.md)
+
+---
+
+## Performance Benchmark: SAMDEF vs. SAHI Baseline
+
+Both systems evaluated on the **identical 281 multi-band GeoTIFF images** using the **identical model (`run15_FP16.onnx`)** executed with `CUDAExecutionProvider` on an **NVIDIA GeForce RTX 4060 Laptop GPU**:
+
+| Metric | SAHI Baseline (Python + CUDA) | SAMDEF (Rust Engine) | Advantage / Speedup |
+| :--- | :--- | :--- | :--- |
+| **Model & Weights** | `run15_FP16.onnx` (FP16 Tensor Cores) | `run15_FP16.onnx` (FP16 Tensor Cores) | **Identical weights** |
+| **Execution Engine** | ONNX Runtime CUDA | ONNX Runtime CUDA | **Identical hardware & runtime** |
+| **Tile Resolution** | $1152 \times 1152$ (20% overlap, stride 922) | $1152 \times 1152$ (20% overlap, stride 922) | **Identical tile size** |
+| **Classes** | 15 Classes | 15 Classes | **Identical class mapping** |
+| **Confidence Cutoff**| `0.01` | `0.01` | **Identical detection threshold** |
+| **Dataset Evaluated** | 281 GeoTIFF images | 281 GeoTIFF images | **Exact same imagery** |
+| **Total Wall-Clock Time** | **99.07 s** | **49.83 s** | **SAMDEF is 2.0× FASTER** |
+
+
+> **Key Systems Insight:** While SAHI operates as a sequential stop-and-wait loop in Python (causing GPU starvation while reading disk or computing bounding-box merging), SAMDEF’s decoupled 3-stage streaming pipeline feeds the GPU continuously via lock-free Crossbeam queues, cutting wall-clock time cleanly in half without altering model weights.  
+> *Detailed architecture documentation:* [apps_deploy/detector/README.md](apps_deploy/detector/README.md)  
+> *Benchmark harness:* [baseline_comparison_SAHI/README.md](baseline_comparison_SAHI/README.md)
 
 ---
 
 ## Table of Contents
+- [Performance Benchmark (SAMDEF vs. SAHI)](#performance-benchmark-samdef-vs-sahi-baseline)
 - [Overview](#overview)
 - [Use Cases](#use-cases)
 - [Inference Examples](#inference-examples)
@@ -44,13 +66,18 @@
 
 ## Overview
 
+
 **SAMDEF** is a high-performance, modular monolith platform designed for efficient edge computer vision and massive-scale image processing. Engineered to operate **fully air-gapped** and optimized for on-premise, mission-critical execution without reliance on cloud or external SaaS infrastructure, it enables high-throughput automated object detection on exceptionally large imagery (such as massive GeoTIFFs).
 
 The system automates the data-intensive groundwork of transforming raw pixels into structured, geospatial knowledge. By leveraging a Zero-Wait GPU Pipeline, it ensures that while one batch of imagery is analyzed, the next is already being pre-processed in memory, maximizing hardware utilization. It provides operators with the critical "What" and "Where" by mapping every detected object (e.g., vehicles, infrastructure, specific assets) to its exact Global Geospatial Coordinates and suppressing duplicates via Spatial Grid NMS.
 
 By delivering high-fidelity metadata and object locations directly to a local, air-gapped database in near real-time, SAMDEF acts as a high-speed programmatic scout for defense, intelligence, and remote tactical environments that are far too large for manual human review.
 
+---
+
 ## Use Cases
+
+
 
 SAMDEF is optimized for massive geospatial and satellite imagery—processing directly on the edge, not on a remote server—making it highly effective across defense, civilian, and commercial applications.
 
@@ -261,17 +288,19 @@ The SAMDEF workflow consists of two main phases: **training** and **deployment**
 ### Deployment Modules
 
 #### detector
+- **Documentation:** [apps_deploy/detector/README.md](apps_deploy/detector/README.md)
 - **Purpose:** High-performance object detection on large-scale geospatial imagery (GeoTIFF).
 - **How it works:** 
-  - Uses a producer-consumer pattern with virtual tiling (`1152x1152` tiles with `922` stride, ~20% overlap).
-  - Normalizes tiles into planar FP32 tensors and feeds them into a dedicated GPU thread running YOLO26s FP16 inference on CUDA Tensor Cores.
-  - Achieves **49.83s total execution time** across 281 GeoTIFF validation images (~177 ms per full satellite scene) at `BATCH_SIZE=1`.
-  - Results are post-processed to global coordinates, filtered across 15 classes, and output as JSON.
-- **Key features:** Virtual tiling, parallel CPU preprocessing, dedicated GPU execution loop, global coordinate mapping, spatial grid NMS, Zenoh publisher.
+  - Uses a decoupled 3-stage streaming pipeline with virtual tiling (`1152x1152` tiles with `922` stride, ~20% overlap).
+  - Normalizes tiles into planar FP32 tensors and feeds them into a dedicated GPU thread running YOLO26s FP16 inference on CUDA Tensor Cores with zero idle bubbles.
+  - Achieves **49.83s total execution time** across 281 GeoTIFF validation images (~177 ms per full satellite image) at `BATCH_SIZE=1`, outperforming SAHI by **2.0×** (49.83s vs 99.07s).
+  - Results are post-processed to global coordinates using an $\mathcal{O}(n)$ spatial hash grid NMS, filtered across 15 classes, and exported asynchronously as GeoJSON / Zenoh telemetry.
+- **Key features:** Decoupled 3-stage streaming, lock-free Crossbeam ring buffers, virtual tiling, dedicated GPU execution loop, direct FP32 host IO, spatial grid NMS, Zenoh publisher.
 - **Folder structure:**
-  - `src/`: Rust source code for tiling, inference, and postprocessing.
-  - `model/`: Contains the ONNX model used for inference.
-  - `docs/`: Architecture and planning documentation.
+  - `src/`: Rust source code for tiling, inference, pre/postprocessing, and Zenoh publishing.
+  - `model/`: Exported FP16 ONNX model (`run15_FP16.onnx`).
+  - `README.md`: Exhaustive architecture documentation and SAHI baseline comparison.
+
 
 #### post_processor
 - **Purpose:** Visualization and annotation of detection results.

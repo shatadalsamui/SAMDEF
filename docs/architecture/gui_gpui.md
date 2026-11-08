@@ -15,7 +15,8 @@ Every source file in `apps_deploy/gui_gpui/src/` owns a single cohesive responsi
 - `app/`: Application state (`mod.rs`), mouse/scroll/hotkey dispatch (`events.rs`), text input handling (`input_keys.rs`), and root composition (`view.rs`).
 - `viewer/`: Sub-pixel cursor-invariant affine math (`state.rs`), priority smallest-area hit-testing (`hit_test.rs`), ordered GPU raster/vector layers (`render.rs`), and shaped glyph badges + geodesic ruler (`overlays.rs`).
 - `io/`: Dataset scanner (`file_scanner.rs`), zero-copy Planar & Chunky BGRA GeoTIFF strip decoder (`tiff_loader.rs`), and GeoJSON/CSV/Markdown intelligence exporters (`exporter.rs`).
-- `model/`: Detector `*_results.json` schema (`detection.rs`) and 15-class neon taxonomy (`palette.rs`).
+- `model/`: Detector `*_results.json` schema (`detection.rs`) and 15-class neon palette (`palette.rs`).
+
 - `ui/`: Client-side window titlebar & resize handles (`titlebar.rs`), top toolbar (`toolbar.rs`), bottom QGIS-style status bar (`status_bar.rs`), radar minimap (`minimap.rs`), target inspector (`inspector.rs`), bottom detection table (`table_drawer.rs`), and modular sidebar (`sidebar/*`).
 
 ### 2.2 Ordered 5-Layer GPU Scene Graph (`window.paint_layer`)

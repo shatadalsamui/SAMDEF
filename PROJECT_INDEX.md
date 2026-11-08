@@ -24,7 +24,9 @@ Machine-readable index of verified file paths for local AI models and coding age
 - `docs/extras.md` — Developer cargo check helper script.
 
 ### apps_deploy/detector/ (Inference Pipeline)
+- `apps_deploy/detector/README.md` — Detector architecture, 3-stage pipeline, and SAHI baseline comparison.
 - `apps_deploy/detector/Cargo.toml` — Crate manifest (ort, GDAL, Zenoh).
+
 - `apps_deploy/detector/Cargo.lock` — Locked dependency versions.
 - `apps_deploy/detector/.env.example` — Environment variable template.
 - `apps_deploy/detector/.aiexclude` — AI editing exclusions.
@@ -141,6 +143,18 @@ Machine-readable index of verified file paths for local AI models and coding age
 - `apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run15/weights/best.pt` — Best PyTorch checkpoint from latest run.
 - `apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run15/weights/best.onnx` — Exported FP16 ONNX model (max_det 5000, 1152px).
 
+### baseline_comparison_SAHI/ (Baseline Benchmark Harness)
+- `baseline_comparison_SAHI/README.md` — Benchmark setup, protocols, and comparative results.
+- `baseline_comparison_SAHI/run_benchmark.sh` — Automated benchmark execution script.
+- `baseline_comparison_SAHI/requirements.txt` — Python dependencies for SAHI benchmarking.
+- `baseline_comparison_SAHI/configs/benchmark_config.yaml` — Benchmark configuration (1152px, 20% overlap, CUDA).
+- `baseline_comparison_SAHI/model/run15_FP16.onnx` — Identical ONNX model used in detector.
+- `baseline_comparison_SAHI/src/sahi_model.py` — Custom SAHI `DetectionModel` wrapper for YOLO ONNX on CUDA.
+- `baseline_comparison_SAHI/src/benchmark_runner.py` — GDAL loader, SAHI slicing loop, and timing instrumentation.
+- `baseline_comparison_SAHI/src/report_generator.py` — Markdown comparison table and metric aggregator.
+
+
+
 ---
 
 ## 2. Application Entry Points
@@ -150,6 +164,8 @@ Machine-readable index of verified file paths for local AI models and coding age
 - `apps_deploy/post_processor/src/main.rs` — Post Processor (annotated PNG generator).
 - `apps_training/ingestor/src/main.rs` — Ingestor (GeoTIFF tile + YOLO label generator).
 - `apps_training/yolo_model_trainer/src/main.py` — Model Trainer (PyTorch/YOLO CLI).
+- `baseline_comparison_SAHI/run_benchmark.sh` — SAHI Baseline Benchmark runner.
+
 
 ---
 
@@ -162,6 +178,8 @@ Machine-readable index of verified file paths for local AI models and coding age
 | GUI rendering / controls | `apps_deploy/gui_gpui/src/viewer/render.rs`, `apps_deploy/gui_gpui/src/ui/sidebar/file_nav.rs`, `apps_deploy/gui_gpui/src/ui/sidebar/class_panel.rs`, `apps_deploy/gui_gpui/src/app/events.rs` |
 | Dataset tiling / labeling | `apps_training/ingestor/src/main.rs`, `apps_training/ingestor/src/modules/image_utils.rs`, `apps_training/ingestor/src/modules/labeler.rs` |
 | Model training & export | `apps_training/yolo_model_trainer/src/main.py`, `apps_training/yolo_model_trainer/src/cortex/trainer.py`, `apps_training/yolo_model_trainer/ReadMe.md` |
+| Baseline comparison / SAHI | `baseline_comparison_SAHI/run_benchmark.sh`, `baseline_comparison_SAHI/src/benchmark_runner.py`, `baseline_comparison_SAHI/configs/benchmark_config.yaml` |
+
 
 ---
 
