@@ -1,7 +1,7 @@
 use crate::app::{ActiveInput, SamdefApp};
 use crate::geo::is_valid_geotransform;
 use crate::io::{export_csv, export_geojson};
-use crate::model::{class_name, class_rgb, DisplayDetection};
+use crate::model::{class_name, class_rgb, DisplayDetection, CLASS_COUNT};
 use crate::ui::theme::*;
 use gpui::{div, prelude::*, px, rgb, Context, IntoElement, MouseButton};
 use std::path::PathBuf;
@@ -15,7 +15,7 @@ impl SamdefApp {
             .detections
             .iter()
             .filter(|d| {
-                if d.class_id >= 8
+                if d.class_id >= CLASS_COUNT
                     || !self.class_visible[d.class_id]
                     || d.confidence < self.confidence_threshold
                 {
@@ -74,7 +74,7 @@ impl SamdefApp {
                                     .text_xs()
                                     .font_weight(gpui::FontWeight::BOLD)
                                     .text_color(rgb(TEXT_PRIMARY))
-                                    .child("TARGET EXPLOITATION TABLE"),
+                                    .child("DETECTION TABLE"),
                             )
                             .child(
                                 div()

@@ -1,40 +1,61 @@
 #![allow(dead_code)]
 use gpui::{rgb, Hsla, Rgba};
 
-pub const CLASS_COUNT: usize = 8;
+pub const CLASS_COUNT: usize = 15;
 
-/// 8 Neon colors for satellite target classes in RGB format
+/// 15 Neon colors for satellite target classes in RGB format
 pub const NEON_RGB: [[u8; 3]; CLASS_COUNT] = [
-    [255, 0, 128],   // 0: Neon Pink (Long Truck)
-    [57, 255, 20],   // 1: Neon Green (Boxy Truck)
-    [0, 255, 255],   // 2: Neon Cyan (Cars/Small Vehicles)
-    [255, 255, 0],   // 3: Neon Yellow (Building)
-    [255, 0, 255],   // 4: Neon Magenta (Container)
-    [0, 255, 128],   // 5: Neon Aqua (Construction)
-    [255, 110, 0],   // 6: Neon Orange (Tank)
-    [0, 255, 200],   // 7: Neon Blue-Green (Container Lot)
+    [0, 229, 255],   // 0: Light Vehicle (Neon Cyan)
+    [57, 255, 20],   // 1: Boxy Truck (Neon Lime)
+    [0, 255, 136],   // 2: Long Truck (Neon Emerald)
+    [41, 121, 255],  // 3: Small Boat (Electric Blue)
+    [101, 31, 255],  // 4: Large Ship (Deep Indigo)
+    [255, 255, 0],   // 5: Fixed Wing (Bright Yellow)
+    [255, 109, 0],   // 6: Helicopter (Neon Orange)
+    [255, 23, 68],   // 7: Building (Neon Red)
+    [255, 82, 82],   // 8: Other Structure (Coral)
+    [213, 0, 249],   // 9: Storage Tank (Neon Purple)
+    [255, 214, 0],   // 10: Container Lot (Amber/Gold)
+    [255, 145, 0],   // 11: Construction Site (Warm Ochre)
+    [0, 191, 165],   // 12: Railway (Mint/Teal)
+    [245, 0, 87],    // 13: Engineering Machinery (Hot Pink)
+    [224, 64, 251],  // 14: Tower Pylon (Lavender)
 ];
 
 pub const CLASS_NAMES: [&str; CLASS_COUNT] = [
-    "Long Truck",
+    "Light Vehicle",
     "Boxy Truck",
-    "Small Vehicle (Car)",
+    "Long Truck",
+    "Small Boat",
+    "Large Ship",
+    "Fixed Wing",
+    "Helicopter",
     "Building",
-    "Container",
-    "Construction",
-    "Tank",
+    "Other Structure",
+    "Storage Tank",
     "Container Lot",
+    "Construction Site",
+    "Railway",
+    "Engineering Machinery",
+    "Tower Pylon",
 ];
 
 pub const CLASS_HEX: [&str; CLASS_COUNT] = [
-    "#FF0080",
+    "#00E5FF",
     "#39FF14",
-    "#00FFFF",
+    "#00FF88",
+    "#2979FF",
+    "#651FFF",
     "#FFFF00",
-    "#FF00FF",
-    "#00FF80",
-    "#FF6E00",
-    "#00FFC8",
+    "#FF6D00",
+    "#FF1744",
+    "#FF5252",
+    "#D500F9",
+    "#FFD600",
+    "#FF9100",
+    "#00BFA5",
+    "#F50057",
+    "#E040FB",
 ];
 
 pub fn class_name(class_id: usize) -> &'static str {
@@ -70,13 +91,14 @@ mod tests {
 
     #[test]
     fn test_class_names_and_colors() {
-        assert_eq!(CLASS_COUNT, 8);
-        assert_eq!(class_name(0), "Long Truck");
-        assert_eq!(class_name(2), "Small Vehicle (Car)");
-        assert_eq!(class_name(6), "Tank");
+        assert_eq!(CLASS_COUNT, 15);
+        assert_eq!(class_name(0), "Light Vehicle");
+        assert_eq!(class_name(1), "Boxy Truck");
+        assert_eq!(class_name(7), "Building");
+        assert_eq!(class_name(14), "Tower Pylon");
         assert_eq!(class_name(999), "Unknown Target");
 
-        let [r, g, b] = class_rgb(2);
-        assert_eq!((r, g, b), (0, 255, 255)); // Cyan
+        let [r, g, b] = class_rgb(0);
+        assert_eq!((r, g, b), (0, 229, 255)); // Cyan
     }
 }

@@ -1,5 +1,5 @@
 use crate::app::SamdefApp;
-use crate::model::class_hsla;
+use crate::model::{class_hsla, CLASS_COUNT};
 use crate::ui::theme::*;
 use gpui::{
     canvas, div, fill, point, prelude::*, px, rgb, rgba, size, BorderStyle, Bounds, Corners, Edges,
@@ -113,7 +113,7 @@ impl SamdefApp {
                                 // Layer 2: Radar neon detection blips + cyan viewport frustum
                                 window.paint_layer(bounds, |window| {
                                     for d in &dets {
-                                        if d.class_id < 8
+                                        if d.class_id < CLASS_COUNT
                                             && class_vis[d.class_id]
                                             && d.confidence >= thresh
                                         {

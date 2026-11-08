@@ -2,7 +2,7 @@
 
 <a href="https://github.com/user-attachments/assets/ad3f7a0d-a2a0-4783-bb32-b2e8836c4f26" target="_blank"><img src="https://github.com/user-attachments/assets/ad3f7a0d-a2a0-4783-bb32-b2e8836c4f26" alt="SAMDEF GIS Viewer (gui_gpui) - Multi-Class Satellite Object Detection" /></a>
 
-*Native GIS Exploitation Viewer (`gui_gpui`): Real-time multi-class GPU vector detection (1,256 active targets) with live radar minimap over high-resolution GeoTIFF imagery (click to view full resolution).*
+*Native GIS Viewer (`gui_gpui`): Real-time multi-class GPU vector detection (1,256 active targets) with live radar minimap over high-resolution GeoTIFF imagery (click to view full resolution).*
 
 <a href="https://github.com/user-attachments/assets/9e9ac8ca-a99f-45ad-a47c-54137e0c3799" target="_blank"><img src="https://github.com/user-attachments/assets/9e9ac8ca-a99f-45ad-a47c-54137e0c3799" alt="SAMDEF GIS Viewer (gui_gpui) - Target Class Solo Isolation" /></a>
 
@@ -12,13 +12,13 @@
 
 *1600% sub-pixel magnification & pinned Target Inspector HUD: Inspecting construction assets with GPU-shaped class/confidence badges, ground dimensions (8.6m x 7.7m), and WGS-84 coordinates (click to view full resolution).*
 
-<a href="https://github.com/user-attachments/assets/8d5b65b3-2b49-4116-92bd-b0cd3b4987a6" target="_blank"><img src="https://github.com/user-attachments/assets/8d5b65b3-2b49-4116-92bd-b0cd3b4987a6" alt="SAMDEF GIS Viewer (gui_gpui) - Target Exploitation Table & Heavy Vehicle Inspection" /></a>
+<a href="https://github.com/user-attachments/assets/8d5b65b3-2b49-4116-92bd-b0cd3b4987a6" target="_blank"><img src="https://github.com/user-attachments/assets/8d5b65b3-2b49-4116-92bd-b0cd3b4987a6" alt="SAMDEF GIS Viewer (gui_gpui) - Detection Table & Heavy Vehicle Inspection" /></a>
 
-*Target Exploitation Table & class filtering: Inspecting isolated long-truck detections at 873% zoom with live tabular telemetry and one-click GeoJSON/CSV exports (click to view full resolution).*
+*Detection Table & class filtering: Inspecting isolated long-truck detections at 873% zoom with live tabular telemetry and one-click GeoJSON/CSV exports (click to view full resolution).*
 
 <a href="https://github.com/user-attachments/assets/feea03ec-4c42-4655-a05a-223d38f206ca" target="_blank"><img src="https://github.com/user-attachments/assets/feea03ec-4c42-4655-a05a-223d38f206ca" alt="SAMDEF GIS Viewer (gui_gpui) - Interactive Table Focus & Highway Target Tracking" /></a>
 
-*One-click target focus: Jumping directly from the exploitation table to highway vehicle detections (#2132, 186.9 m2 footprint) with live radar frustum tracking (click to view full resolution).*
+*One-click target focus: Jumping directly from the detection table to highway vehicle detections (#2132, 186.9 m2 footprint) with live radar frustum tracking (click to view full resolution).*
 
 <a href="https://github.com/user-attachments/assets/efd453e0-1170-4e1d-8f95-64031d872b51" target="_blank"><img src="https://github.com/user-attachments/assets/efd453e0-1170-4e1d-8f95-64031d872b51" alt="SAMDEF GIS Viewer (gui_gpui) - Geodesic Haversine Distance & Azimuth Ruler" /></a>
 
@@ -263,22 +263,23 @@ The SAMDEF workflow consists of two main phases: **training** and **deployment**
 #### detector
 - **Purpose:** High-performance object detection on large-scale geospatial imagery (GeoTIFF).
 - **How it works:** 
-  - Uses a producer-consumer pattern with virtual tiling to break large images into manageable tiles.
-  - Tiles are preprocessed and batched for GPU inference using a YOLOv26s ONNX model.
-  - Results are post-processed to global coordinates and output as JSON.
-- **Key features:** Virtual tiling, parallel CPU preprocessing, GPU batching, global coordinate mapping, efficient memory usage.
+  - Uses a producer-consumer pattern with virtual tiling (`1152x1152` tiles with `922` stride, ~20% overlap).
+  - Normalizes tiles into planar FP32 tensors and feeds them into a dedicated GPU thread running YOLO26s FP16 inference on CUDA Tensor Cores.
+  - Achieves **49.83s total execution time** across 281 GeoTIFF validation images (~177 ms per full satellite scene) at `BATCH_SIZE=1`.
+  - Results are post-processed to global coordinates, filtered across 15 classes, and output as JSON.
+- **Key features:** Virtual tiling, parallel CPU preprocessing, dedicated GPU execution loop, global coordinate mapping, spatial grid NMS, Zenoh publisher.
 - **Folder structure:**
   - `src/`: Rust source code for tiling, inference, and postprocessing.
   - `model/`: Contains the ONNX model used for inference.
   - `docs/`: Architecture and planning documentation.
 
 #### post_processor
-- **Purpose:** Visualization of detection results.
+- **Purpose:** Visualization and annotation of detection results.
 - **How it works:** 
   - Reads JSON outputs from the detector.
-  - Loads original GeoTIFF images and draws bounding boxes with class-specific colors.
+  - Loads original GeoTIFF images and draws bounding boxes with 15-class high-contrast neon colors.
   - Saves annotated images for review and analysis.
-- **Key features:** High-fidelity image annotation, class-specific color coding, efficient handling of large images.
+- **Key features:** High-fidelity image annotation, 15-class color coding, efficient handling of large images.
 - **Folder structure:**
   - `src/`: Rust source code for image annotation and visualization.
 
@@ -294,18 +295,18 @@ The SAMDEF workflow consists of two main phases: **training** and **deployment**
   - `src/`: Rust source code for database and Zenoh integration.
   - `docs/`: Documentation for database schema and integration.
 
-#### gui_gpui (Interactive GIS Viewer & Exploitation GUI)
-- **Purpose:** Native, GPU-accelerated desktop GIS exploitation workstation built on GPUI (Vulkan/Blade) for interactive inspection and tactical analysis of ultra-high-resolution satellite imagery (GeoTIFF) with vector detection overlays.
+#### gui_gpui (Interactive GIS Viewer & Inspection GUI)
+- **Purpose:** Native, GPU-accelerated desktop GIS workstation built on GPUI (Vulkan/Blade) for interactive inspection and analysis of ultra-high-resolution satellite imagery (GeoTIFF) with vector detection overlays.
 - **How it works:**
   - Fast-decodes multi-gigabyte Planar Configuration 2 and chunky GeoTIFF strips directly into zero-copy BGRA GPU textures.
   - Renders ordered immediate-mode GPU passes (`paint_layer`) for the satellite raster, dynamic hollow neon vector bounding boxes, GPU-shaped class/confidence badges, and geodesic ruler overlays with zero texture re-uploads.
   - Implements sub-pixel cursor-invariant zooming, `1:1` native pixel inspection, interactive radar minimap with frustum tracking, geodesic Haversine distance/bearing measurement, and GDAL 6-parameter WGS-84 coordinate projection.
   - Features instant file search, closed-by-default dropdown selection, floating target inspector HUD, collapsible detection table drawer, and GeoJSON/CSV/Markdown intelligence exporters.
-- **Key features:** Zed / VS Code Dark styling, client-side Wayland/X11 window decorations, 8-class visibility toggles + Solo isolation, interactive confidence slider, live WGS-84 Decimal Degrees / DMS / GSD status bar, and one-click GIS exports.
+- **Key features:** Zed / VS Code Dark styling, client-side Wayland/X11 window decorations, 15-class visibility toggles + Solo isolation, interactive confidence slider, live WGS-84 Decimal Degrees / DMS / GSD status bar, and one-click GIS exports.
 - **Folder structure:**
   - `src/app/`: Application state, async GeoTIFF/JSON loader, event dispatch, and text input handling.
   - `src/io/`: Planar/chunky TIFF strip decoder, dataset scanner, and GeoJSON/CSV/Markdown exporters.
-  - `src/model/`: Detection schema entities and 8-class neon color taxonomy.
+  - `src/model/`: Detection schema entities and 15-class neon color taxonomy.
   - `src/ui/`: Client-side titlebar, toolbar, status bar, radar minimap, target inspector, table drawer, and modular sidebar.
   - `src/viewer/`: Sub-pixel coordinate math, priority hit-testing, and 5-layer GPU rendering pipeline.
   - Documentation: `README.md` and [`docs/architecture/gui_gpui.md`](docs/architecture/gui_gpui.md).

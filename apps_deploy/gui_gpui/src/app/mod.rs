@@ -10,6 +10,7 @@ pub enum ActiveInput {
 }
 
 use crate::geo::GeoTransform;
+use crate::model::CLASS_COUNT;
 use crate::io::{
     default_results_dir, load_tiff_or_image, resolve_tiff_path, scan_json_directory, LoadedImage,
 };
@@ -37,7 +38,7 @@ pub struct SamdefApp {
     pub active_input: Option<ActiveInput>,
     pub file_dropdown_open: bool,
 
-    pub class_visible: [bool; 8],
+    pub class_visible: [bool; CLASS_COUNT],
     pub confidence_threshold: f32,
 
     pub status_message: String,
@@ -70,7 +71,7 @@ impl SamdefApp {
             table_search_query: String::new(),
             active_input: None,
             file_dropdown_open: false,
-            class_visible: [true; 8],
+            class_visible: [true; CLASS_COUNT],
             confidence_threshold: 0.20,
             status_message: "Scanning inference directory...".to_string(),
             is_loading: false,
@@ -210,10 +211,10 @@ impl SamdefApp {
         }
     }
 
-    pub fn class_counts(&self) -> [usize; 8] {
-        let mut counts = [0; 8];
+    pub fn class_counts(&self) -> [usize; CLASS_COUNT] {
+        let mut counts = [0; CLASS_COUNT];
         for d in &self.detections {
-            if d.class_id < 8 && d.confidence >= self.confidence_threshold {
+            if d.class_id < CLASS_COUNT && d.confidence >= self.confidence_threshold {
                 counts[d.class_id] += 1;
             }
         }

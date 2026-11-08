@@ -1,6 +1,6 @@
 use crate::geo::GeoTransform;
 use crate::io::LoadedImage;
-use crate::model::{class_hsla, DisplayDetection};
+use crate::model::{class_hsla, DisplayDetection, CLASS_COUNT};
 use crate::viewer::overlays::{paint_badges_layer, paint_ruler_layers, BadgeItem};
 use crate::viewer::state::ViewerState;
 use gpui::{
@@ -19,7 +19,7 @@ pub fn paint_viewer(
     viewport: Bounds<Pixels>,
     loaded_image: Option<&LoadedImage>,
     detections: &[DisplayDetection],
-    class_visible: &[bool; 8],
+    class_visible: &[bool; CLASS_COUNT],
     confidence_threshold: f32,
     geo_transform: &GeoTransform,
     state: &ViewerState,
@@ -87,7 +87,7 @@ pub fn paint_viewer(
 
     window.paint_layer(viewport, |window| {
         for det in detections {
-            if det.class_id >= 8
+            if det.class_id >= CLASS_COUNT
                 || !class_visible[det.class_id]
                 || det.confidence < confidence_threshold
             {

@@ -61,10 +61,10 @@ This microservice is optimized for throughput and scalability, leveraging multi-
 - **consumer.rs**: Implements a 3-stage decoupled pipeline: CPU batch preprocessing, dedicated GPU inference runner, and asynchronous postprocessing / Tokio file saving.
 - **session.rs**: Initializes ONNX inference session with GPU CUDA execution provider.
 - **publisher.rs**: Publishes detection payloads to Zenoh.
-- **virtual_tiler.rs**: Handles virtual tiling of large GeoTIFFs into fixed-size tiles (896x896) with configurable stride overlap.
+- **virtual_tiler.rs**: Handles virtual tiling of large GeoTIFFs into fixed-size tiles (1152x1152) with configurable stride overlap (922).
 
 #### `modules/processing`
-- **pre_processing.rs**: Converts raw image data into normalized planar FP16 tensors suitable for model input.
+- **pre_processing.rs**: Converts raw image data into normalized planar FP32 tensors suitable for model input.
 - **inference.rs**: Runs the ONNX model on input tensors on the GPU.
 - **post_processing.rs**: Parses model outputs, applies spatial non-maximum suppression (NMS), and maps detections to global coordinates.
 
@@ -84,7 +84,7 @@ This microservice is optimized for throughput and scalability, leveraging multi-
 - Each worker thread:
   - Continuously receives image paths from the work queue with zero barrier pauses.
   - Opens a GeoTIFF using GDAL.
-  - Tiles the image into fixed-size (896x896) RGB tiles with 20% overlap (stride).
+  - Tiles the image into fixed-size (1152x1152) RGB tiles with 20% overlap (stride 922).
   - For each tile, creates an `InferenceTask` containing the raw tile bytes and global spatial offsets.
   - Sends tiles sequentially as `PipelineMessage::Process(InferenceTask)` to the channel.
   - After all tiles for that file are sent, sends a `PipelineMessage::EndOfFile` with spatial metadata and expected tile count.
@@ -93,7 +93,7 @@ This microservice is optimized for throughput and scalability, leveraging multi-
 ### 5.3. Channel (Queue)
 
 - A bounded, thread-safe channel (Crossbeam) buffers messages between producer and consumer.
-- Optimal configuration: `BATCH_SIZE=2` and `PRODUCER_PARALLELISM=2` for maximum throughput (44.59s) and 90%+ flatline GPU utilization.
+- Optimal configuration: `BATCH_SIZE=1` and `PRODUCER_PARALLELISM=2` for maximum throughput (49.83s across 281 images) and flatline GPU utilization.
 
 ### 5.4. Decoupled 3-Stage Consumer Pipeline (OS Threads vs Rayon)
 
@@ -103,7 +103,7 @@ The consumer architecture is decoupled into **3 dedicated OS threads** connected
    - Runs as a persistent OS thread (`thread::spawn`).
    - Receives tiles from the input channel and bundles them into batches.
    - Uses Rayon data parallelism (`par_iter`) internally across CPU cores to normalize pixels and transpose HWC to CHW planar format in sub-milliseconds.
-   - Forwards ready `Array4<f16>` tensors to the dedicated GPU channel.
+   - Forwards ready `Array4<f32>` tensors to the dedicated GPU channel.
    - Forwards `EndOfFile` metadata directly to Stage 3.
 2. **Stage 2 (OS Thread B - Dedicated GPU Inference Runner)**:
    - Runs as a persistent OS thread (`thread::spawn`) holding the CUDA `Session`.
@@ -149,9 +149,9 @@ The stages communicate via bounded Crossbeam channels (`gpu_tx: bounded(4)`, `po
 - **Producer**: Efficiently reads and tiles large images using a continuous work-stealing thread pool.
 - **Channel**: Decouples I/O-bound producer from compute-bound consumer, smoothing bursts and maximizing GPU usage.
 - **Consumer**: Orchestrates the 3-stage decoupled pipeline for continuous 90%+ GPU utilization.
-- **Preprocessing**: Ensures model receives data in the correct FP16 CHW format.
+- **Preprocessing**: Ensures model receives data in the correct FP32 CHW format.
 - **Inference**: Leverages ONNX Runtime with CUDA for fast, uninterrupted batched inference.
-- **Postprocessing**: Cleans up model outputs, applies NMS, and prepares results for downstream use.
+- **Postprocessing**: Cleans up model outputs, applies NMS across 15 classes, and prepares results for downstream use.
 - **Output/Publisher**: Ensures results are saved and published in both human-readable (JSON) and machine-consumable (Zenoh) formats.
 
 ---
@@ -161,7 +161,7 @@ The stages communicate via bounded Crossbeam channels (`gpu_tx: bounded(4)`, `po
 1. **Input**: GeoTIFF images placed in the input directory.
 2. **Streaming Tiling**: Producer worker threads continuously split images into overlapping tiles.
 3. **Task Dispatch**: Tiles are sent as `PipelineMessage` items through a Crossbeam channel.
-4. **Batch Preprocessing (Stage 1)**: CPU thread converts batches to normalized `Array4<f16>` tensors.
+4. **Batch Preprocessing (Stage 1)**: CPU thread converts batches to normalized `Array4<f32>` tensors.
 5. **Dedicated Inference (Stage 2)**: GPU thread executes inference on CUDA uninterrupted.
 6. **Postprocessing & NMS (Stage 3)**: Bounding boxes are parsed, shifted to global coordinates, and aggregated.
 7. **Async Output**: Completed files are serialized to JSON and published to Zenoh via Tokio background tasks.

@@ -1,8 +1,8 @@
-# SAMDEF GIS Exploitation Viewer (`gui_gpui`) Architecture
+# SAMDEF GIS Viewer (`gui_gpui`) Architecture
 
 ## 1. Overview
 
-`gui_gpui` is SAMDEF's native, GPU-accelerated Geospatial Intelligence (GEOINT) and Target Exploitation desktop workstation, built in Rust on top of [GPUI 0.2.2](https://github.com/zed-industries/zed) (Zed's immediate-mode Vulkan/Blade GPU rendering engine).
+`gui_gpui` is SAMDEF's native, GPU-accelerated Geospatial Intelligence (GEOINT) and Target Viewer desktop workstation, built in Rust on top of [GPUI 0.2.2](https://github.com/zed-industries/zed) (Zed's immediate-mode Vulkan/Blade GPU rendering engine).
 
 It replaces the legacy `gui_iced` viewer with direct instanced GPU primitive rendering, Planar Configuration 2 GeoTIFF strip decoding, GDAL 6-parameter affine georeferencing, geodesic Haversine distance/azimuth measurement, a live radar minimap, target inspection HUD, tabular detection drawer, and multi-format intelligence exports (GeoJSON, CSV, Markdown).
 
@@ -15,7 +15,7 @@ Every source file in `apps_deploy/gui_gpui/src/` owns a single cohesive responsi
 - `app/`: Application state (`mod.rs`), mouse/scroll/hotkey dispatch (`events.rs`), text input handling (`input_keys.rs`), and root composition (`view.rs`).
 - `viewer/`: Sub-pixel cursor-invariant affine math (`state.rs`), priority smallest-area hit-testing (`hit_test.rs`), ordered GPU raster/vector layers (`render.rs`), and shaped glyph badges + geodesic ruler (`overlays.rs`).
 - `io/`: Dataset scanner (`file_scanner.rs`), zero-copy Planar & Chunky BGRA GeoTIFF strip decoder (`tiff_loader.rs`), and GeoJSON/CSV/Markdown intelligence exporters (`exporter.rs`).
-- `model/`: Detector `*_results.json` schema (`detection.rs`) and 8-class neon taxonomy (`palette.rs`).
+- `model/`: Detector `*_results.json` schema (`detection.rs`) and 15-class neon taxonomy (`palette.rs`).
 - `ui/`: Client-side window titlebar & resize handles (`titlebar.rs`), top toolbar (`toolbar.rs`), bottom QGIS-style status bar (`status_bar.rs`), radar minimap (`minimap.rs`), target inspector (`inspector.rs`), bottom detection table (`table_drawer.rs`), and modular sidebar (`sidebar/*`).
 
 ### 2.2 Ordered 5-Layer GPU Scene Graph (`window.paint_layer`)
@@ -52,7 +52,7 @@ apps_deploy/gui_gpui/
     │   └── view.rs               # Root Render tree & live viewport bounds capture
     ├── model/
     │   ├── detection.rs          # FinalOutput JSON schema & ground footprint math
-    │   └── palette.rs            # 8 neon target colors & RGBA/HSLA helpers
+    │   └── palette.rs            # 15 neon target colors & RGBA/HSLA helpers
     ├── io/
     │   ├── file_scanner.rs       # Inference directory scanner & TIFF path resolver
     │   ├── tiff_loader.rs        # Planar Config 2 & chunky BGRA strip decoder
@@ -68,12 +68,12 @@ apps_deploy/gui_gpui/
         ├── toolbar.rs            # Fit, 1:1, Zoom, Ruler, B/W, Radar & Table bar
         ├── status_bar.rs         # Live WGS-84 Lat/Lon, DMS, Pixel & GSD status bar
         ├── minimap.rs            # Occluded radar overview with blips & cyan frustum
-        ├── inspector.rs          # Occluded hover/pinned target exploitation HUD
+        ├── inspector.rs          # Occluded hover/pinned target inspection HUD
         ├── table_drawer.rs       # Occluded bottom detection table & live filter
         └── sidebar/
             ├── mod.rs            # Scrollable left sidebar container
             ├── file_nav.rs       # Editable dir scan, instant search & dropdown picker
-            ├── class_panel.rs    # 8-class toggles, live counts & toggleable Solo
+            ├── class_panel.rs    # 15-class toggles, live counts & toggleable Solo
             ├── confidence_panel.rs # Interactive drag/click slider & ASCII steppers
             └── telemetry_export.rs # Scene GIS telemetry & export triggers
 ```

@@ -1,6 +1,6 @@
 use anyhow::Result;
 use crate::geo::{format_lat_lon, is_valid_geotransform, pixel_to_geo, GeoTransform};
-use crate::model::{class_name, DisplayDetection};
+use crate::model::{class_name, DisplayDetection, CLASS_COUNT};
 use serde_json::json;
 use std::fs;
 use std::path::Path;
@@ -71,7 +71,7 @@ pub fn export_geojson<P: AsRef<Path>>(
 
     let root = json!({
         "type": "FeatureCollection",
-        "name": format!("SAMDEF_Exploitation_{}", image_name),
+        "name": format!("SAMDEF_Detections_{}", image_name),
         "crs": {
             "type": "name",
             "properties": {
@@ -126,9 +126,9 @@ pub fn export_summary_report<P: AsRef<Path>>(
     visible_count: usize,
     threshold: f32,
 ) -> Result<()> {
-    let mut class_counts = [0usize; 8];
+    let mut class_counts = [0usize; CLASS_COUNT];
     for d in detections {
-        if d.class_id < 8 {
+        if d.class_id < CLASS_COUNT {
             class_counts[d.class_id] += 1;
         }
     }
@@ -217,14 +217,14 @@ mod tests {
         export_geojson(&geojson_path, &dets, &gt, "sample.tif").unwrap();
         let geojson_content = fs::read_to_string(&geojson_path).unwrap();
         assert!(geojson_content.contains("\"FeatureCollection\""));
-        assert!(geojson_content.contains("\"Long Truck\""));
+        assert!(geojson_content.contains("\"Light Vehicle\""));
 
         // 2. CSV
         let csv_path = temp_dir.join("test.csv");
         export_csv(&csv_path, &dets, &gt).unwrap();
         let csv_content = fs::read_to_string(&csv_path).unwrap();
         assert!(csv_content.contains("id,class_id,class_name"));
-        assert!(csv_content.contains("Long Truck"));
+        assert!(csv_content.contains("Light Vehicle"));
 
         // 3. Markdown
         let md_path = temp_dir.join("test.md");

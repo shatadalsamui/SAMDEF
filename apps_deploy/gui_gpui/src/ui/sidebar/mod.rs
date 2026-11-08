@@ -58,7 +58,7 @@ impl SamdefApp {
                         div()
                             .text_xs()
                             .text_color(rgb(TEXT_DIM))
-                            .child("Satellite Object Detection & Exploitation"),
+                            .child("Satellite Target Detection & GIS"),
                     ),
             )
             .child(self.render_file_nav(cx))

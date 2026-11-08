@@ -17,7 +17,7 @@ Machine-readable index of verified file paths for local AI models and coding age
 ### docs/
 - `docs/architecture/detector.md` — Detector pipeline architecture & tiling.
 - `docs/architecture/dbprocessor.md` — DB processor & PostGIS spatial storage.
-- `docs/architecture/gui_gpui.md` — GPUI GIS Exploitation Viewer architecture.
+- `docs/architecture/gui_gpui.md` — GPUI GIS Viewer architecture.
 - `docs/architecture/ingestor_training.md` — Ingestor & training flow.
 - `docs/architecture/model_trainer.md` — YOLO training architecture.
 - `docs/drawingscript.md` — Shell script to draw boxes on imagery.
@@ -29,7 +29,6 @@ Machine-readable index of verified file paths for local AI models and coding age
 - `apps_deploy/detector/.env.example` — Environment variable template.
 - `apps_deploy/detector/.aiexclude` — AI editing exclusions.
 - `apps_deploy/detector/docs/1_plan.md` — Detector architecture plan.
-- `apps_deploy/detector/docs/2_plan_fp32_to_fp16.md` — FP16 migration plan.
 - `apps_deploy/detector/docs/flow.md` — End-to-end detector data flow.
 - `apps_deploy/detector/docs/NMS.md` — Spatial-grid NMS implementation.
 - `apps_deploy/detector/docs/VirtualTiling.md` — Virtual tiling specifications.
@@ -64,10 +63,10 @@ Machine-readable index of verified file paths for local AI models and coding age
 - `apps_deploy/db_processor/src/modules/writer/queries.rs` — SQL insert queries for PostGIS geometry.
 - `apps_deploy/db_processor/src/modules/writer/zenoh_subscriber.rs` — Zenoh subscriber handler.
 
-### apps_deploy/gui_gpui/ (GIS Exploitation Viewer - GPUI)
+### apps_deploy/gui_gpui/ (GIS Viewer - GPUI)
 - `apps_deploy/gui_gpui/Cargo.toml` — Crate manifest (gpui, serde, image, tiff).
 - `apps_deploy/gui_gpui/build.rs` — Self-healing Linux XCB/XKB multiarch linker symlink resolver.
-- `apps_deploy/gui_gpui/README.md` — Exploitation manual, hotkeys, and SRP module layout.
+- `apps_deploy/gui_gpui/README.md` — User manual, hotkeys, and SRP module layout.
 - `apps_deploy/gui_gpui/src/main.rs` — Entry point (maximized CSD GPUI window & keystroke observer).
 - `apps_deploy/gui_gpui/src/geo.rs` — GDAL 6-param affine transform, DMS formatter & Haversine geodesy.
 - `apps_deploy/gui_gpui/src/app/mod.rs` — SamdefApp state, async GeoTIFF/JSON loader & navigation.
@@ -87,7 +86,7 @@ Machine-readable index of verified file paths for local AI models and coding age
 - `apps_deploy/gui_gpui/src/ui/toolbar.rs` — Top bar (Fit, 1:1, Zoom, Ruler, B/W, Radar, Table).
 - `apps_deploy/gui_gpui/src/ui/status_bar.rs` — Bottom QGIS-style live Lat/Lon, DMS, Pixel & GSD bar.
 - `apps_deploy/gui_gpui/src/ui/minimap.rs` — Interactive radar thumbnail, neon target blips & cyan frustum.
-- `apps_deploy/gui_gpui/src/ui/inspector.rs` — Occluded hover/pinned target exploitation HUD card.
+- `apps_deploy/gui_gpui/src/ui/inspector.rs` — Occluded hover/pinned target inspection HUD card.
 - `apps_deploy/gui_gpui/src/ui/table_drawer.rs` — Occluded bottom detection table drawer & live search filter.
 - `apps_deploy/gui_gpui/src/ui/sidebar/mod.rs` — Scrollable left sidebar container & header.
 - `apps_deploy/gui_gpui/src/ui/sidebar/file_nav.rs` — Editable dir scanner, instant file search & dropdown picker.
@@ -133,7 +132,6 @@ Machine-readable index of verified file paths for local AI models and coding age
 - `apps_training/yolo_model_trainer/src/cortex/run13Constraints.txt` — Archived Run13 constraints snapshot.
 - `apps_training/yolo_model_trainer/src/models/yolo26s.pt` — Small base YOLO checkpoint.
 - `apps_training/yolo_model_trainer/src/yolo26n.pt` — Nano base YOLO checkpoint.
-- `apps_training/yolo_model_trainer/src/utils/utils.py` — ONNX FP16 export & graph patcher.
 - `apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run11/args.yaml` — Hyperparameters for Run11.
 - `apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run12/args.yaml` — Hyperparameters for Run12.
 - `apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run13/args.yaml` — Hyperparameters for Run13.
@@ -141,13 +139,14 @@ Machine-readable index of verified file paths for local AI models and coding age
 - `apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run14/weights/best_fp16.onnx` — Exported FP16 ONNX model.
 - `apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run15/args.yaml` — Hyperparameters for Run15.
 - `apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run15/weights/best.pt` — Best PyTorch checkpoint from latest run.
+- `apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run15/weights/best.onnx` — Exported FP16 ONNX model (max_det 5000, 1152px).
 
 ---
 
 ## 2. Application Entry Points
 - `apps_deploy/detector/src/main.rs` — Detector (producer/consumer inference engine).
 - `apps_deploy/db_processor/src/main.rs` — DB Processor (Zenoh subscriber -> PostGIS).
-- `apps_deploy/gui_gpui/src/main.rs` — GUI GPUI (GPU-accelerated Desktop GIS Exploitation Viewer).
+- `apps_deploy/gui_gpui/src/main.rs` — GUI GPUI (GPU-accelerated Desktop GIS Viewer).
 - `apps_deploy/post_processor/src/main.rs` — Post Processor (annotated PNG generator).
 - `apps_training/ingestor/src/main.rs` — Ingestor (GeoTIFF tile + YOLO label generator).
 - `apps_training/yolo_model_trainer/src/main.py` — Model Trainer (PyTorch/YOLO CLI).
@@ -162,7 +161,7 @@ Machine-readable index of verified file paths for local AI models and coding age
 | Database & Zenoh storage | `apps_deploy/db_processor/src/main.rs`, `apps_deploy/db_processor/src/modules/writer/zenoh_subscriber.rs`, `apps_deploy/db_processor/src/modules/writer/queries.rs` |
 | GUI rendering / controls | `apps_deploy/gui_gpui/src/viewer/render.rs`, `apps_deploy/gui_gpui/src/ui/sidebar/file_nav.rs`, `apps_deploy/gui_gpui/src/ui/sidebar/class_panel.rs`, `apps_deploy/gui_gpui/src/app/events.rs` |
 | Dataset tiling / labeling | `apps_training/ingestor/src/main.rs`, `apps_training/ingestor/src/modules/image_utils.rs`, `apps_training/ingestor/src/modules/labeler.rs` |
-| Model training & export | `apps_training/yolo_model_trainer/src/main.py`, `apps_training/yolo_model_trainer/src/cortex/trainer.py`, `apps_training/yolo_model_trainer/src/utils/utils.py` |
+| Model training & export | `apps_training/yolo_model_trainer/src/main.py`, `apps_training/yolo_model_trainer/src/cortex/trainer.py`, `apps_training/yolo_model_trainer/ReadMe.md` |
 
 ---
 

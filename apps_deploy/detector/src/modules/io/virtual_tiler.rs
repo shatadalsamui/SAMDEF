@@ -6,8 +6,8 @@ use std::path::Path;
 
 use crate::modules::data::task::{InferenceTask, PipelineMessage};
 
-const TILE_SIZE: usize = 896;
-const STRIDE: usize = 716; // ~ 20 percent overlap
+const TILE_SIZE: usize = 1152;
+const STRIDE: usize = 922; // ~ 20 percent overlap (1152 * 0.8 = 921.6)
 
 ///  send PipelineMessage::Process for each tile
 pub fn process_geotiff(source_path_str: &str, msg_sender: Sender<PipelineMessage>) -> Result<()> {

@@ -7,7 +7,6 @@ use crate::modules::processing::post_processing::{parse_output, Detection};
 use crate::modules::processing::pre_processing::preprocess_batch;
 use anyhow::Result;
 use crossbeam::channel;
-use half::f16;
 use ndarray::Array4;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -28,7 +27,7 @@ struct FileState {
 
 enum PostMessage {
     InferenceResult {
-        outputs: ndarray::ArrayD<f16>,
+        outputs: ndarray::ArrayD<f32>,
         tasks: Vec<InferenceTask>,
     },
     EndOfFile {
@@ -50,7 +49,7 @@ pub async fn run_consumer(
 ) -> Result<()> {
     // Channels connecting the 3 stages:
     // Stage 1 -> Stage 2 (GPU)
-    let (gpu_tx, gpu_rx) = channel::bounded::<Option<(Array4<f16>, Vec<InferenceTask>)>>(4);
+    let (gpu_tx, gpu_rx) = channel::bounded::<Option<(Array4<f32>, Vec<InferenceTask>)>>(4);
     // Stage 2 & Stage 1 -> Stage 3 (Postprocess & Save)
     let (post_tx, post_rx) = channel::bounded::<PostMessage>(64);
 
@@ -68,7 +67,7 @@ pub async fn run_consumer(
                     if batch.len() == batch_size {
                         let input_data = preprocess_batch(&batch)?;
                         let input_tensor =
-                            Array4::<f16>::from_shape_vec((batch.len(), 3, 896, 896), input_data)?;
+                            Array4::<f32>::from_shape_vec((batch.len(), 3, 1152, 1152), input_data)?;
                         let _ = gpu_tx.send(Some((input_tensor, std::mem::take(&mut batch))));
                     }
                 }
@@ -92,7 +91,7 @@ pub async fn run_consumer(
                     if !batch.is_empty() {
                         let input_data = preprocess_batch(&batch)?;
                         let input_tensor =
-                            Array4::<f16>::from_shape_vec((batch.len(), 3, 896, 896), input_data)?;
+                            Array4::<f32>::from_shape_vec((batch.len(), 3, 1152, 1152), input_data)?;
                         let _ = gpu_tx.send(Some((input_tensor, std::mem::take(&mut batch))));
                     }
                     let _ = gpu_tx.send(None);

@@ -1,12 +1,19 @@
-// Class ID to name mapping (fixed color per class):
-// 0: long truck         (Neon Pink)
-// 1: boxy truck         (Neon Green)
-// 2: small vehicle      (Neon Cyan)
-// 3: building           (Neon Yellow)
-// 4: container          (Neon Magenta)
-// 5: construction vehicle (Neon Aqua)
-// 6: tank               (Neon Orange)
-// 7: container lot      (Neon Blue-Green)
+// Run 15 Class ID to Name mapping (15 classes):
+// 0: Light-Vehicle          (Neon Cyan)
+// 1: Boxy-Truck             (Neon Lime)
+// 2: Long-Trucks            (Neon Emerald)
+// 3: Small-Boat             (Electric Blue)
+// 4: Large-Ship             (Deep Indigo)
+// 5: Fixed-Wing             (Bright Yellow)
+// 6: Helicopter             (Neon Orange)
+// 7: Building               (Neon Red)
+// 8: Other-Structure        (Coral)
+// 9: Storage-Tank           (Neon Purple)
+// 10: Container-Lot         (Amber/Gold)
+// 11: Construction-Site     (Warm Ochre)
+// 12: Railway               (Mint/Teal)
+// 13: Engineering-Machinery (Hot Pink)
+// 14: Tower-Pylon           (Lavender)
 use ab_glyph::FontRef;
 use anyhow::Result;
 use image::Rgb;
@@ -20,16 +27,23 @@ use std::path::Path;
 use std::time::Instant;
 use tiff::decoder::Decoder;
 
-// Neon color palette for 8 classes
-const NEON_COLORS: [Rgb<u8>; 8] = [
-    Rgb([255, 0, 128]), // Neon Pink
-    Rgb([57, 255, 20]), // Neon Green
-    Rgb([0, 255, 255]), // Neon Cyan
-    Rgb([255, 255, 0]), // Neon Yellow
-    Rgb([255, 0, 255]), // Neon Magenta
-    Rgb([0, 255, 128]), // Neon Aqua
-    Rgb([255, 110, 0]), // Neon Orange
-    Rgb([0, 255, 200]), // Neon Blue-Green
+// Neon color palette for 15 classes (Run 15)
+const NEON_COLORS: [Rgb<u8>; 15] = [
+    Rgb([0, 229, 255]),   // 0: Light-Vehicle (Neon Cyan)
+    Rgb([57, 255, 20]),   // 1: Boxy-Truck (Neon Lime)
+    Rgb([0, 255, 136]),   // 2: Long-Trucks (Neon Emerald)
+    Rgb([41, 121, 255]),  // 3: Small-Boat (Electric Blue)
+    Rgb([101, 31, 255]),  // 4: Large-Ship (Deep Indigo)
+    Rgb([255, 255, 0]),   // 5: Fixed-Wing (Bright Yellow)
+    Rgb([255, 109, 0]),   // 6: Helicopter (Neon Orange)
+    Rgb([255, 23, 68]),   // 7: Building (Neon Red)
+    Rgb([255, 82, 82]),   // 8: Other-Structure (Coral)
+    Rgb([213, 0, 249]),   // 9: Storage-Tank (Neon Purple)
+    Rgb([255, 214, 0]),   // 10: Container-Lot (Amber/Gold)
+    Rgb([255, 145, 0]),   // 11: Construction-Site (Warm Ochre)
+    Rgb([0, 191, 165]),   // 12: Railway (Mint/Teal)
+    Rgb([245, 0, 87]),    // 13: Engineering-Machinery (Hot Pink)
+    Rgb([224, 64, 251]),  // 14: Tower-Pylon (Lavender)
 ];
 
 #[derive(Debug, Deserialize, Clone)]

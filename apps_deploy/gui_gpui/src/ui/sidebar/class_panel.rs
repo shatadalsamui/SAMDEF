@@ -1,5 +1,5 @@
 use crate::app::SamdefApp;
-use crate::model::{class_name, class_rgb};
+use crate::model::{class_name, class_rgb, CLASS_COUNT};
 use crate::ui::theme::*;
 use gpui::{div, prelude::*, px, rgb, Context, IntoElement, MouseButton};
 
@@ -38,7 +38,7 @@ impl SamdefApp {
                                     .on_mouse_down(
                                         MouseButton::Left,
                                         cx.listener(|this, _, _, cx| {
-                                            this.class_visible = [true; 8];
+                                            this.class_visible = [true; CLASS_COUNT];
                                             cx.notify();
                                         }),
                                     ),
@@ -50,7 +50,7 @@ impl SamdefApp {
                                     .on_mouse_down(
                                         MouseButton::Left,
                                         cx.listener(|this, _, _, cx| {
-                                            this.class_visible = [false; 8];
+                                            this.class_visible = [false; CLASS_COUNT];
                                             cx.notify();
                                         }),
                                     ),
@@ -127,10 +127,10 @@ impl SamdefApp {
                             .text_xs()
                             .font_weight(gpui::FontWeight::SEMIBOLD)
                             .text_color(rgb(TEXT_SECONDARY))
-                            .child("TARGET CLASSES [1-8]")
+                            .child("TARGET CLASSES")
                             .child(div().text_color(rgb(TEXT_DIM)).child("Solo")),
                     )
-                    .children((0..8).map(|i| {
+                    .children((0..CLASS_COUNT).map(|i| {
                         let is_active = self.class_visible[i];
                         let count = class_counts[i];
                         let [r, g, b] = class_rgb(i);
@@ -227,9 +227,9 @@ impl SamdefApp {
                                                             .count()
                                                             == 1
                                                     {
-                                                        this.class_visible = [true; 8];
+                                                        this.class_visible = [true; CLASS_COUNT];
                                                     } else {
-                                                        this.class_visible = [false; 8];
+                                                        this.class_visible = [false; CLASS_COUNT];
                                                         this.class_visible[i] = true;
                                                     }
                                                     cx.notify();

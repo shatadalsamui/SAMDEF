@@ -12,7 +12,7 @@ use gpui::{
 };
 
 fn main() {
-    println!("Starting SAMDEF GIS Exploitation Viewer [GPUI Edition]...");
+    println!("Starting SAMDEF GIS Viewer [GPUI Edition]...");
 
     Application::new().run(|cx: &mut App| {
         cx.on_window_closed(|cx| {
@@ -36,7 +36,7 @@ fn main() {
 
         let window = cx
             .open_window(window_options, |window, cx| {
-                window.set_window_title("SAMDEF GIS Exploitation Viewer");
+                window.set_window_title("SAMDEF GIS Viewer");
                 cx.new(|cx| {
                     cx.observe_window_bounds(window, |_, _, cx| cx.notify())
                         .detach();

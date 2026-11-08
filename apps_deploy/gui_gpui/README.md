@@ -1,12 +1,12 @@
-# SAMDEF GPUI Exploitation Viewer (`gui_gpui`)
+# SAMDEF GPUI GIS Viewer (`gui_gpui`)
 
-A high-performance, GPU-accelerated Geospatial Intelligence (GEOINT) and Target Exploitation interface for SAMDEF, engineered with the [GPUI](https://github.com/zed-industries/zed) UI framework.
+A high-performance, GPU-accelerated Geospatial Intelligence (GEOINT) and Target Viewer interface for SAMDEF, engineered with the [GPUI](https://github.com/zed-industries/zed) UI framework.
 
 ---
 
 ## Overview & Comparison with `gui_iced`
 
-While `gui_iced` provides a solid baseline for visualizing detection outputs, `gui_gpui` is designed for high-throughput, mission-critical satellite image exploitation with direct GPU quad-painting, zero-allocation TIFF strip decoding, and deep geospatial telemetry.
+While `gui_iced` provides a solid baseline for visualizing detection outputs, `gui_gpui` is designed for high-throughput, mission-critical satellite image inspection with direct GPU quad-painting, zero-allocation TIFF strip decoding, and deep geospatial telemetry.
 
 | Feature / Dimension | `gui_iced` (Legacy) | `gui_gpui` (New Engine) |
 | :--- | :--- | :--- |
@@ -14,9 +14,9 @@ While `gui_iced` provides a solid baseline for visualizing detection outputs, `g
 | **Rendering Pipeline** | Canvas cache redraws | Direct GPU quad & path rasterization via Vulkan/Blade |
 | **TIFF Decoding** | Chunky conversion into RGB image | Direct planar & chunky zero-allocation BGRA strip unpacker |
 | **Geospatial Telemetry** | Basic lon/lat display | GDAL 6-param affine projection, DMS/DD formats, GSD estimation |
-| **Target Exploitation HUD** | Minimal hover tooltip | Floating Target Inspector card with ground dimensions & real area ($m^2$) |
+| **Target Inspector HUD** | Minimal hover tooltip | Floating Target Inspector card with ground dimensions & real area ($m^2$) |
 | **Navigation & Frustum** | Mouse drag / scroll only | Viewport pan/zoom + **Interactive Radar Minimap** with frustum tracking |
-| **Exploitation Drawer** | None | Collapsible tabular detection list with search, sorting & 1-click focus |
+| **Detection Drawer** | None | Collapsible tabular detection list with search, sorting & 1-click focus |
 | **Measurement Tools** | None | **Interactive Geodesic Ruler**: ground distance ($m$/$km$) and azimuth bearing |
 | **Panchromatic Filter** | None | Grayscale toggle for enhanced target contrast in dense urban/industrial scenes |
 | **Data Export** | None | Multi-format export: **GeoJSON FeatureCollection**, **CSV**, & **Markdown Reports** |
@@ -54,10 +54,10 @@ The viewer preserves the standard 8-class SAMDEF detection schema with high-visi
 - Live Ground Sample Distance (GSD) calculation in meters per pixel.
 - Detection footprint estimation: calculates ground width, length, and real-world area ($m^2$).
 
-### 3. Interactive Target Exploitation
+### 3. Interactive Target Inspection
 - **Floating Inspector**: Displays selected/hovered target classification, confidence gauge, bounding coordinates, and an instant **"Focus Target"** button that centers and zooms the viewport directly onto the object.
 - **Detection Table Drawer**: Collapsible bottom drawer displaying every visible detection with class filter count, confidence rating, pixel dimensions, and ground area. Clicking any row immediately jumps the camera to that detection.
-- **Class Soloing**: Click "Solo" next to any class in the left panel to immediately isolate only those targets, hiding the other 7 classes.
+- **Class Soloing**: Click "Solo" next to any class in the left panel to immediately isolate only those targets, hiding the other classes.
 
 ### 4. Interactive Geodesic Ruler
 - Toggle Ruler Mode via the toolbar button or hotkey `M`.
@@ -125,13 +125,13 @@ apps_deploy/gui_gpui/
         ├── titlebar.rs         # Client-side window titlebar & edge resize handles
         ├── toolbar.rs          # Fit, 1:1, center-zoom, Ruler, B/W, Radar & Table bar
         ├── status_bar.rs       # Bottom QGIS-style live Lat/Lon, DMS, Pixel & GSD bar
-        ├── inspector.rs        # Occluded floating target exploitation HUD card
+        ├── inspector.rs        # Occluded floating target inspection HUD card
         ├── minimap.rs          # Interactive radar overview with blips & cyan frustum
         ├── table_drawer.rs     # Occluded bottom detection table & 1-click focus
         └── sidebar/
             ├── mod.rs          # Left sidebar container & header
             ├── file_nav.rs     # Dataset scanner, instant search & dropdown picker
-            ├── class_panel.rs  # 8-class visibility toggles, counts & toggleable Solo
+            ├── class_panel.rs  # 15-class visibility toggles, counts & toggleable Solo
             ├── confidence_panel.rs # Interactive drag/click slider & ASCII steppers
             └── telemetry_export.rs # Live scene GIS telemetry & export triggers
 ```

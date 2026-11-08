@@ -119,7 +119,7 @@ impl SamdefApp {
                             .text_xs()
                             .font_weight(gpui::FontWeight::BOLD)
                             .text_color(rgb(TEXT_PRIMARY))
-                            .child("SAMDEF GIS EXPLOITATION VIEWER"),
+                            .child("SAMDEF GIS VIEWER"),
                     )
                     .child(
                         div()

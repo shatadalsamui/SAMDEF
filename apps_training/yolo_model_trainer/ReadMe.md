@@ -1,35 +1,36 @@
 # SAMDEF YOLO Model Trainer
 
-## 1. Set up a Python virtual environment
+## 1. Set up a Python Virtual Environment
 
 ```bash
+cd apps_training/yolo_model_trainer
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-## 2. Install dependencies
+## 2. Install Dependencies
+
+Ensure your virtual environment is active, then install the package in editable mode:
 
 ```bash
-pip install .
+pip install -e .
 ```
 
-## 3. Download YOLO weights
+*Note: For ONNX export, `onnx` and `onnxslim` will automatically be installed or updated by Ultralytics if not already present.*
 
-If you do not have the YOLOv26s weights, run:
+## 3. Base YOLO Weights
 
-```bash
-python3 src/utils/download_weights.py
-```
-
-If you already have the weights, move them to the correct location:
+Place base YOLO weights (e.g., `yolo26s.pt` or `yolo26n.pt`) inside `src/models/` or let Ultralytics fetch them automatically when initializing training:
 
 ```bash
+mkdir -p src/models
+# Example: Place yolo26s.pt in src/models/
 mv yolo26s.pt src/models/yolo26s.pt
 ```
 
-## 4. Train the YOLO model
+## 4. Train the YOLO Model
 
-Activate your virtual environment, go to the source directory, and run:
+Activate the virtual environment and start training via the CLI entrypoint:
 
 ```bash
 source venv/bin/activate
@@ -37,67 +38,36 @@ cd src
 python3 main.py train
 ```
 
-This will check your system, load the model, and start training.
+This validates system resources, initializes CUDA, loads hyperparameters from configuration files, and trains the model. Checkpoints and training artifacts are stored in `src/SAMDEF_ISR/RunX/weights/`.
 
-## 5. Export the trained model to ONNX
+## 5. Export Trained Model to ONNX FP16
 
-After training, export your best model to ONNX format:
+Ultralytics provides native end-to-end FP16 export and optimization with `onnxslim`. Run the export directly from your active virtual environment:
 
 ```bash
-yolo export model=/home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run14/weights/best.pt format=onnx half=True opset=17 simplify=True nms=True max_det=2000 dynamic=True
+source venv/bin/activate
+
+yolo export \
+  model=/home/shatadal/PROJECTS/SAMDEF/apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run15/weights/best.pt \
+  format=onnx \
+  half=True \
+  opset=17 \
+  simplify=True \
+  nms=True \
+  max_det=5000 \
+  dynamic=True \
+  imgsz=1152
 ```
 
-## 6. Full Pipeline: Convert `.pt` Model to ONNX FP16 (End-to-End)
+### Export Parameter Explanation:
+- `format=onnx`: Exports the PyTorch `.pt` model to ONNX.
+- `half=True`: Quantizes internal weights and operations to FP16 (Tensor Core acceleration).
+- `opset=17`: Modern ONNX opset supporting optimized FP16 kernels and layer normalizations.
+- `simplify=True`: Runs `onnxslim` to simplify redundant constant expressions, squeeze nodes, and optimize graph topology.
+- `nms=True`: Instructs exporter to include NMS (for end-to-end models, YOLO26 automatically outputs fused detections `[batch, max_det, 6]`).
+- `max_det=5000`: Sets the maximum candidate detections per tile output.
+- `dynamic=True`: Retains dynamic batch size (`[batch, 5000, 6]`).
+- `imgsz=1152`: Configures the input spatial resolution to 1152×1152 pixels.
 
-### Step 1: Export PyTorch Model to ONNX (with FP16 weights)
-```bash
-yolo export model=/home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run14/weights/best.pt format=onnx half=True opset=17 simplify=True nms=True max_det=2000 dynamic=True
-```
-This produces an ONNX model with FP16 weights, but the input/output nodes may still be float32.
-
-### Step 2: Convert ONNX Model IO to FP16 (if needed)
-If you need the ONNX model's input and output nodes to be FP16 (for true end-to-end FP16 inference), you can use the provided Python utility script or run the following Python code:
-
-#### Run the utility script:
-```bash
-python3 /home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/utils/utils.py
-```
-
-#### Or, run this Python snippet:
-```python
-import onnx
-
-model = onnx.load("/home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run14/weights/best.onnx")
-for input_tensor in model.graph.input:
-    input_tensor.type.tensor_type.elem_type = 10  # FLOAT16
-for output_tensor in model.graph.output:
-    output_tensor.type.tensor_type.elem_type = 10  # FLOAT16
-onnx.save(model, "/home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run14/weights/best_fp16_io.onnx")
-```
-
-### Step 3: (If needed) Patch the Final Cast Node to Output FP16
-If you get an ONNX Runtime error about output type mismatch, patch the final Cast node to output FP16:
-
-```python
-import onnx
-
-model_path = "/home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run14/weights/best_fp16_io.onnx"
-patched_path = "/home/shatadal/SAMDEF/apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run14/weights/best_fp16_io_patched.onnx"
-
-model = onnx.load(model_path)
-
-for node in model.graph.node:
-    if node.op_type == "Cast" and node.name == "graph_output_cast0":
-        for attr in node.attribute:
-            if attr.name == "to":
-                print(f"Changing Cast node {node.name} from {attr.i} to 10 (FLOAT16)")
-                attr.i = 10  # 10 = FLOAT16
-
-onnx.save(model, patched_path)
-print("Patched model saved as", patched_path)
-```
-
-### Step 4: Use the Patched Model for Inference
-Use the final patched ONNX model (e.g., `best_fp16_io_patched.onnx`) in your inference pipeline.
-
----
+> [!NOTE]
+> The exported ONNX graph contains native FP16 internal weights while maintaining FP32 inputs and outputs (`images: float32`, `output0: float32` via a terminal `Cast` node). This is by design: host CPUs can feed and retrieve standard 32-bit floats without software half-precision conversion overhead, while GPU Tensor Cores execute all hidden layers in native FP16.

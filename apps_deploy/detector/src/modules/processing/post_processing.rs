@@ -1,4 +1,3 @@
-use half::f16;
 use ndarray::ArrayView2;
 use rayon::prelude::*;
 use serde::Serialize;
@@ -118,24 +117,27 @@ pub fn non_maximum_suppression(detections: &mut Vec<Detection>, iou_threshold: f
 }
 
 /// Parses the Raw Output from the ONNX Model
-/// Format: [Batch, 1000, 6] -> [x_min, y_min, x_max, y_max, confidence, class_id]
-pub fn parse_output(output: ArrayView2<f16>) -> Vec<Detection> {
+/// Format: [Batch, 5000, 6] -> [x_min, y_min, x_max, y_max, confidence, class_id]
+pub fn parse_output(output: ArrayView2<f32>) -> Vec<Detection> {
     let mut detections = Vec::new();
-    const IMG_SIZE: f32 = 896.0;
+    const IMG_SIZE: f32 = 1152.0;
     const MAX_COORD: f32 = IMG_SIZE - 1.0;
 
-    // CONFIDENCE THRESHOLDS (0.0 to 1.0)
-    const CLASS_THRESHOLDS: [f32; 8] = [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01];
+    // CONFIDENCE THRESHOLDS (0.0 to 1.0) for 15 classes:
+    // 0: Light-Vehicle, 1: Boxy-Truck, 2: Long-Trucks, 3: Small-Boat, 4: Large-Ship,
+    // 5: Fixed-Wing, 6: Helicopter, 7: Building, 8: Other-Structure, 9: Storage-Tank,
+    // 10: Container-Lot, 11: Construction-Site, 12: Railway, 13: Engineering-Machinery, 14: Tower-Pylon
+    const CLASS_THRESHOLDS: [f32; 15] = [0.01; 15];
 
     for proposal in output.rows() {
-        let confidence = proposal[4].to_f32();
-        let class_id = proposal[5].to_f32() as usize;
+        let confidence = proposal[4];
+        let class_id = proposal[5] as usize;
 
         if class_id < CLASS_THRESHOLDS.len() && confidence > CLASS_THRESHOLDS[class_id] {
-            let x_min = proposal[0].to_f32().clamp(0.0, MAX_COORD);
-            let y_min = proposal[1].to_f32().clamp(0.0, MAX_COORD);
-            let mut x_max = proposal[2].to_f32().clamp(0.0, MAX_COORD);
-            let mut y_max = proposal[3].to_f32().clamp(0.0, MAX_COORD);
+            let x_min = proposal[0].clamp(0.0, MAX_COORD);
+            let y_min = proposal[1].clamp(0.0, MAX_COORD);
+            let mut x_max = proposal[2].clamp(0.0, MAX_COORD);
+            let mut y_max = proposal[3].clamp(0.0, MAX_COORD);
 
             if x_max <= x_min {
                 x_max = (x_min + 1.0).min(MAX_COORD);

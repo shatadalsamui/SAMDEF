@@ -1,4 +1,4 @@
-use crate::model::DisplayDetection;
+use crate::model::{DisplayDetection, CLASS_COUNT};
 use crate::viewer::state::ViewerState;
 
 impl ViewerState {
@@ -8,7 +8,7 @@ impl ViewerState {
         &self,
         pixel_coord: (f32, f32),
         detections: &'a [DisplayDetection],
-        class_visible: &[bool; 8],
+        class_visible: &[bool; CLASS_COUNT],
         threshold: f32,
         pixel_tolerance: f32,
     ) -> Option<&'a DisplayDetection> {
@@ -18,7 +18,7 @@ impl ViewerState {
         let mut min_area = f32::MAX;
 
         for d in detections {
-            if d.class_id >= 8 || !class_visible[d.class_id] || d.confidence < threshold {
+            if d.class_id >= CLASS_COUNT || !class_visible[d.class_id] || d.confidence < threshold {
                 continue;
             }
             if px >= d.x_min - pad
@@ -39,7 +39,7 @@ impl ViewerState {
 
 #[cfg(test)]
 mod tests {
-    use crate::model::DisplayDetection;
+    use crate::model::{DisplayDetection, CLASS_COUNT};
     use crate::viewer::state::{ViewerState, MAX_ZOOM_SCALE, MIN_ZOOM_SCALE};
     use gpui::{px, Bounds, Point};
 
@@ -140,7 +140,7 @@ mod tests {
                 confidence: 0.95,
             },
         ];
-        let class_visible = [true; 8];
+        let class_visible = [true; CLASS_COUNT];
 
         let hit = state.hit_test((60.0, 60.0), &dets, &class_visible, 0.5, 0.0);
         assert_eq!(hit.map(|d| d.id), Some(2));
@@ -148,7 +148,7 @@ mod tests {
         let hit_high = state.hit_test((60.0, 60.0), &dets, &class_visible, 0.96, 0.0);
         assert!(hit_high.is_none());
 
-        let mut vis_filtered = [true; 8];
+        let mut vis_filtered = [true; CLASS_COUNT];
         vis_filtered[2] = false;
         let hit_fallback = state.hit_test((60.0, 60.0), &dets, &vis_filtered, 0.5, 0.0);
         assert_eq!(hit_fallback.map(|d| d.id), Some(1));
