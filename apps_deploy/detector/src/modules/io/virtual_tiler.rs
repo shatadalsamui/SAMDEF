@@ -4,13 +4,18 @@ use gdal::Dataset;
 use log::{info, warn};
 use std::path::Path;
 
+use crate::modules::data::buffer_pool::TileBytePool;
 use crate::modules::data::task::{InferenceTask, PipelineMessage};
 
-const TILE_SIZE: usize = 1152;
+pub const TILE_SIZE: usize = 1152;
 const STRIDE: usize = 922; // ~ 20 percent overlap (1152 * 0.8 = 921.6)
 
-///  send PipelineMessage::Process for each tile
-pub fn process_geotiff(source_path_str: &str, msg_sender: Sender<PipelineMessage>) -> Result<()> {
+///  send PipelineMessage::Process for each tile directly in planar [R|G|B] CHW layout
+pub fn process_geotiff(
+    source_path_str: &str,
+    msg_sender: Sender<PipelineMessage>,
+    byte_pool: &TileBytePool,
+) -> Result<()> {
     // makes the images file path usable
     let clean_path_str = source_path_str
         .trim_matches(|c| c == '"' || c == '\'' || c == '\n' || c == '\r' || c == ' ');
@@ -55,27 +60,37 @@ pub fn process_geotiff(source_path_str: &str, msg_sender: Sender<PipelineMessage
             let window_size = (TILE_SIZE, TILE_SIZE);
             let buffer_size = (TILE_SIZE, TILE_SIZE);
 
-            let r_buffer = band1.read_as::<u8>(window_offset, window_size, buffer_size, None)?;
-            let g_buffer = band2.read_as::<u8>(window_offset, window_size, buffer_size, None)?;
-            let b_buffer = band3.read_as::<u8>(window_offset, window_size, buffer_size, None)?;
-
-            // Pre-allocate and fill interleaved_data for zero-overhead
             let len = TILE_SIZE * TILE_SIZE;
-            let mut interleaved_data = vec![0u8; len * 3];
-
-            let r_data = r_buffer.data();
-            let g_data = g_buffer.data();
-            let b_data = b_buffer.data();
-
-            for i in 0..len {
-                interleaved_data[i * 3] = r_data[i];
-                interleaved_data[i * 3 + 1] = g_data[i];
-                interleaved_data[i * 3 + 2] = b_data[i];
+            let mut planar_data = byte_pool.acquire();
+            if planar_data.len() != len * 3 {
+                planar_data.resize(len * 3, 0);
             }
 
+            band1.read_into_slice::<u8>(
+                window_offset,
+                window_size,
+                buffer_size,
+                &mut planar_data[..len],
+                None,
+            )?;
+            band2.read_into_slice::<u8>(
+                window_offset,
+                window_size,
+                buffer_size,
+                &mut planar_data[len..2 * len],
+                None,
+            )?;
+            band3.read_into_slice::<u8>(
+                window_offset,
+                window_size,
+                buffer_size,
+                &mut planar_data[2 * len..3 * len],
+                None,
+            )?;
+
             let task = InferenceTask {
-                image_data: interleaved_data,
-                source_path: source_path_str.to_string(),
+                image_data: planar_data,
+                source_path: canonical_path.clone(),
                 global_offset_x: tile_x as i32,
                 global_offset_y: tile_y as i32,
             };

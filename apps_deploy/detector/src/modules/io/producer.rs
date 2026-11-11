@@ -1,3 +1,4 @@
+use crate::modules::data::buffer_pool::TileBytePool;
 use crate::modules::data::task::PipelineMessage;
 use crate::modules::io::virtual_tiler;
 use anyhow::Result;
@@ -10,6 +11,7 @@ pub fn run_producer(
     input_dir: PathBuf,
     task_tx: channel::Sender<PipelineMessage>,
     producer_parallelism: usize,
+    byte_pool: TileBytePool,
 ) -> Result<()> {
     // 1. Collect and Sort Paths
     let mut entries: Vec<_> = fs::read_dir(input_dir)?
@@ -33,6 +35,7 @@ pub fn run_producer(
     for _ in 0..producer_parallelism {
         let rx = path_rx.clone();
         let tx = task_tx.clone();
+        let pool = byte_pool.clone();
 
         let handle = thread::spawn(move || {
             // Workers continuously pull next available image with zero barrier wait
@@ -45,7 +48,7 @@ pub fn run_producer(
                     }
                 };
 
-                if let Err(e) = virtual_tiler::process_geotiff(&canonical_path, tx.clone()) {
+                if let Err(e) = virtual_tiler::process_geotiff(&canonical_path, tx.clone(), &pool) {
                     eprintln!("Error processing {:?}: {}", path, e);
                 }
             }

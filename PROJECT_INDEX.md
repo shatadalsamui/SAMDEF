@@ -45,12 +45,18 @@ Machine-readable index of verified file paths for local AI models and coding age
 - `apps_deploy/detector/src/modules/io/session.rs` — CUDA ONNX Runtime session initializer.
 - `apps_deploy/detector/src/modules/io/producer.rs` — GeoTIFF producer worker pool.
 - `apps_deploy/detector/src/modules/io/virtual_tiler.rs` — GeoTIFF tiling logic.
-- `apps_deploy/detector/src/modules/io/consumer.rs` — 3-stage pipeline (preprocess, GPU, postprocess).
+- `apps_deploy/detector/src/modules/io/consumer.rs` — 5-stage isolated GPU-safe consumer coordinator.
+- `apps_deploy/detector/src/modules/io/aggregator.rs` — Dedicated tile parser & scene completion aggregator.
+- `apps_deploy/detector/src/modules/io/nms_worker.rs` — Dedicated NMS worker thread (isolated Rayon pool).
 - `apps_deploy/detector/src/modules/io/publisher.rs` — Zenoh publisher implementation.
 - `apps_deploy/detector/src/modules/processing/mod.rs` — Processing submodules export.
 - `apps_deploy/detector/src/modules/processing/pre_processing.rs` — FP16 CHW normalization.
 - `apps_deploy/detector/src/modules/processing/inference.rs` — GPU ONNX inference.
-- `apps_deploy/detector/src/modules/processing/post_processing.rs` — NMS & global coordinate mapping.
+- `apps_deploy/detector/src/modules/processing/geometry.rs` — Edge truncation flags, overlap metrics & multi-cell spatial grid.
+- `apps_deploy/detector/src/modules/processing/seam_merger.rs` — Iterative X/Y cross-seam bounding box merger.
+- `apps_deploy/detector/src/modules/processing/boundary_nms.rs` — Truncated fragment absorption & hybrid IoU/IoS NMS.
+- `apps_deploy/detector/src/modules/processing/boundary_tests.rs` — Boundary seam-merge & hybrid NMS unit tests.
+- `apps_deploy/detector/src/modules/processing/post_processing.rs` — Boundary resolution coordinator & tensor output parser.
 
 ### apps_deploy/db_processor/ (Database Persistence)
 - `apps_deploy/db_processor/Cargo.toml` — Crate manifest (SQLx, Zenoh).

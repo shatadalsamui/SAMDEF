@@ -15,8 +15,8 @@ pub struct FinalOutput {
     pub detections: Vec<Detection>,
 }
 
-/// Process and save results for a single TIFF (JSON + Zenoh)
-pub async fn process_single_image(
+/// Persists pre-resolved scene detections (non-blocking JSON write) and publishes via Zenoh.
+pub async fn save_resolved_scene(
     path_str: &str,
     geo_transform: [f64; 6],
     detections: Vec<Detection>,
@@ -27,25 +27,12 @@ pub async fn process_single_image(
 ) -> Result<()> {
     let path = PathBuf::from(path_str);
     println!(
-        "Processing results for {:?} ({} detections)",
+        "Saving resolved results for {:?} ({} detections)",
         path,
         detections.len()
     );
 
-    // Global NMS Pass
-    let mut nms_detections = detections;
-    crate::modules::processing::post_processing::non_maximum_suppression(&mut nms_detections, 0.45);
-
-    let output_data = FinalOutput {
-        source_image: path_str.to_string(),
-        geo_transform,
-        source_width: width,
-        source_height: height,
-        detections: nms_detections.clone(),
-    };
-
-    // Map post_processing::Detection to payload::Detection
-    let payload_detections: Vec<crate::modules::data::payload::Detection> = nms_detections
+    let payload_detections: Vec<crate::modules::data::payload::Detection> = detections
         .iter()
         .map(|d| crate::modules::data::payload::Detection {
             bbox: crate::modules::data::payload::BoundingBox {
@@ -59,18 +46,32 @@ pub async fn process_single_image(
         })
         .collect();
 
-    // Save JSON output as before
+    let output_data = FinalOutput {
+        source_image: path_str.to_string(),
+        geo_transform,
+        source_width: width,
+        source_height: height,
+        detections,
+    };
+
     let file_name = path
         .file_stem()
         .ok_or_else(|| anyhow::anyhow!("Invalid file stem"))?
         .to_str()
         .ok_or_else(|| anyhow::anyhow!("Non-UTF8 file name"))?;
     let output_path = output_dir.join(format!("{}_results.json", file_name));
-    let file = std::fs::File::create(&output_path)?;
-    serde_json::to_writer_pretty(std::io::BufWriter::new(file), &output_data)?;
-    println!("Saved: {:?}", output_path);
+    let output_path_log = output_path.clone();
 
-    // Build and publish DetectionPayload via Zenoh (async)
+    // Offload synchronous disk serialization so Tokio I/O and Zenoh never block.
+    tokio::task::spawn_blocking(move || -> Result<()> {
+        let file = std::fs::File::create(&output_path)?;
+        serde_json::to_writer_pretty(std::io::BufWriter::new(file), &output_data)?;
+        Ok(())
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("JSON save task failed: {}", e))??;
+    println!("Saved: {:?}", output_path_log);
+
     let payload = DetectionPayload {
         source_image: path_str.to_string(),
         geo_transform,

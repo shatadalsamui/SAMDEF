@@ -1,118 +1,84 @@
+use crate::modules::io::virtual_tiler::TILE_SIZE;
+use crate::modules::processing::boundary_nms::{absorb_truncated_fragments, run_hybrid_grid_nms};
+pub use crate::modules::processing::geometry::{
+    compute_local_trunc_mask, finalize_trunc_mask_for_image, BoundingBox, Detection, RawDetection,
+};
+use crate::modules::processing::seam_merger::merge_seam_truncated_boxes;
 use ndarray::ArrayView2;
 use rayon::prelude::*;
-use serde::Serialize;
-use std::cmp::Ordering;
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Copy, Serialize)]
-pub struct BoundingBox {
-    pub x_min: f32,
-    pub y_min: f32,
-    pub x_max: f32,
-    pub y_max: f32,
+/// Builds a bounded Rayon pool isolated from Stage 1's global preprocessing pool
+/// so post-processing bursts never starve GPU batch preparation.
+pub fn create_nms_pool() -> rayon::ThreadPool {
+    let cores = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(4);
+    let nms_threads = (cores / 3).clamp(2, 4);
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(nms_threads)
+        .thread_name(|idx| format!("samdef-nms-{}", idx))
+        .build()
+        .expect("Failed to build isolated NMS thread pool")
 }
 
-#[derive(Debug, Clone, Serialize)]
-pub struct Detection {
-    pub bbox: BoundingBox,
-    pub class_id: usize,
-    pub confidence: f32,
-}
-
-/// Calculate Intersection over Union (IoU)
-fn calculate_iou(box_a: &BoundingBox, box_b: &BoundingBox) -> f32 {
-    let x_a = box_a.x_min.max(box_b.x_min);
-    let y_a = box_a.y_min.max(box_b.y_min);
-    let x_b = box_a.x_max.min(box_b.x_max);
-    let y_b = box_a.y_max.min(box_b.y_max);
-
-    let inter_area = (x_b - x_a).max(0.0) * (y_b - y_a).max(0.0);
-
-    let box_a_area = (box_a.x_max - box_a.x_min) * (box_a.y_max - box_a.y_min);
-    let box_b_area = (box_b.x_max - box_b.x_min) * (box_b.y_max - box_b.y_min);
-
-    let union_area = box_a_area + box_b_area - inter_area;
-    if union_area > 0.0 {
-        inter_area / union_area
-    } else {
-        0.0
+fn group_by_class(raw_dets: Vec<RawDetection>) -> HashMap<usize, Vec<RawDetection>> {
+    let mut class_map: HashMap<usize, Vec<RawDetection>> = HashMap::new();
+    for d in raw_dets {
+        class_map.entry(d.detection.class_id).or_default().push(d);
     }
+    class_map
 }
 
-/// O(n) Spatial Grid NMS with 3x3 Neighborhood Overlap
+/// Full 3-stage boundary-aware detection resolution executed per scene.
+pub fn resolve_tiled_detections(
+    mut raw_dets: Vec<RawDetection>,
+    img_width: usize,
+    img_height: usize,
+    iou_threshold: f32,
+) -> Vec<Detection> {
+    if raw_dets.is_empty() {
+        return Vec::new();
+    }
+
+    finalize_trunc_mask_for_image(&mut raw_dets, img_width, img_height);
+
+    group_by_class(raw_dets)
+        .into_par_iter()
+        .flat_map(|(_, class_dets)| {
+            let merged = merge_seam_truncated_boxes(class_dets);
+            let absorbed = absorb_truncated_fragments(merged);
+            run_hybrid_grid_nms(absorbed, iou_threshold)
+        })
+        .collect()
+}
+
+/// Runs `resolve_tiled_detections` inside an isolated Rayon pool so Stage 1's global pool is never starved.
+pub fn resolve_tiled_detections_in_pool(
+    pool: &rayon::ThreadPool,
+    raw_dets: Vec<RawDetection>,
+    img_width: usize,
+    img_height: usize,
+    iou_threshold: f32,
+) -> Vec<Detection> {
+    pool.install(|| resolve_tiled_detections(raw_dets, img_width, img_height, iou_threshold))
+}
+
+/// Legacy single-slice Spatial Grid NMS entry point upgraded to multi-cell indexing.
+#[allow(dead_code)]
 pub fn non_maximum_suppression(detections: &mut Vec<Detection>, iou_threshold: f32) {
     if detections.is_empty() {
         return;
     }
 
-    // Grid size must be larger than your largest object (e.g., 1000px)
-    const GRID_SIZE: f32 = 1000.0;
+    let raw = std::mem::take(detections)
+        .into_iter()
+        .map(|d| RawDetection::from_detection(d, (0, 0), 0))
+        .collect::<Vec<_>>();
 
-    // 1. Group by class to allow parallel execution
-    let all_detections = std::mem::take(detections);
-    let mut class_map: HashMap<usize, Vec<Detection>> = HashMap::new();
-    for d in all_detections {
-        class_map.entry(d.class_id).or_default().push(d);
-    }
-
-    // 2. Process classes in parallel using Rayon
-    *detections = class_map
+    *detections = group_by_class(raw)
         .into_par_iter()
-        .flat_map(|(_, mut class_dets)| {
-            // Sort by confidence (High to Low): O(n log n)
-            class_dets.sort_unstable_by(|a, b| {
-                b.confidence
-                    .partial_cmp(&a.confidence)
-                    .unwrap_or(Ordering::Equal)
-            });
-
-            let n = class_dets.len();
-            let mut suppressed = vec![false; n];
-            let mut kept = Vec::new();
-
-            // 3. Build Spatial Grid for this class
-            // Maps (grid_x, grid_y) -> Indices of boxes in that cell
-            let mut grid: HashMap<(i32, i32), Vec<usize>> = HashMap::new();
-            for (idx, det) in class_dets.iter().enumerate() {
-                let gx = (det.bbox.x_min / GRID_SIZE).floor() as i32;
-                let gy = (det.bbox.y_min / GRID_SIZE).floor() as i32;
-                grid.entry((gx, gy)).or_default().push(idx);
-            }
-
-            // 4. Run NMS with 3x3 Neighborhood Search
-            // Main loop: iterates over each detection (n times)
-            for i in 0..n {
-                if suppressed[i] {
-                    continue;
-                }
-                let current_det = &class_dets[i];
-                kept.push(current_det.clone());
-
-                let gx = (current_det.bbox.x_min / GRID_SIZE).floor() as i32;
-                let gy = (current_det.bbox.y_min / GRID_SIZE).floor() as i32;
-
-                // First nested loop: iterate over neighbor x (3 times)
-                for nx in (gx - 1)..=(gx + 1) {
-                    // Second nested loop: iterate over neighbor y (3 times)
-                    for ny in (gy - 1)..=(gy + 1) {
-                        if let Some(indices) = grid.get(&(nx, ny)) {
-                            // Third nested loop: iterate over detections in this grid cell (k times, usually small)
-                            for &j in indices {
-                                // Only check lower-confidence boxes that aren't already suppressed
-                                if j > i && !suppressed[j] {
-                                    if calculate_iou(&current_det.bbox, &class_dets[j].bbox)
-                                        > iou_threshold
-                                    {
-                                        suppressed[j] = true; // O(1) update
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            kept
-        })
+        .flat_map(|(_, class_dets)| run_hybrid_grid_nms(class_dets, iou_threshold))
         .collect();
 }
 
@@ -120,7 +86,7 @@ pub fn non_maximum_suppression(detections: &mut Vec<Detection>, iou_threshold: f
 /// Format: [Batch, 5000, 6] -> [x_min, y_min, x_max, y_max, confidence, class_id]
 pub fn parse_output(output: ArrayView2<f32>) -> Vec<Detection> {
     let mut detections = Vec::new();
-    const IMG_SIZE: f32 = 1152.0;
+    const IMG_SIZE: f32 = TILE_SIZE as f32;
     const MAX_COORD: f32 = IMG_SIZE - 1.0;
 
     // CONFIDENCE THRESHOLDS (0.0 to 1.0) for 15 classes:

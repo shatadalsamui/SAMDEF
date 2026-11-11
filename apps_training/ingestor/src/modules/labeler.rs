@@ -76,6 +76,8 @@ pub fn prepare_labels(labels: &[Label]) -> Vec<ParsedLabel> {
         .collect()
 }
 
+const MIN_VISIBLE_AREA_RATIO: f64 = 0.35;
+
 /// Given parsed labels and a tile window, produce YOLO txt content.
 pub fn labels_for_tile(
     parsed: &[ParsedLabel],
@@ -95,6 +97,10 @@ pub fn labels_for_tile(
         let pymin = p.ymin as usize;
         let pymax = p.ymax as usize;
 
+        if pxmax <= pxmin || pymax <= pymin {
+            continue;
+        }
+
         if pxmax <= t_min_x || pxmin >= t_max_x || pymax <= t_min_y || pymin >= t_max_y {
             continue;
         }
@@ -105,6 +111,13 @@ pub fn labels_for_tile(
         let c_ymax = pymax.max(t_min_y).min(t_max_y);
 
         if c_xmax <= c_xmin || c_ymax <= c_ymin {
+            continue;
+        }
+
+        // Discard severely clipped boundary fragments so models aren't trained on slivers.
+        let orig_area = ((pxmax - pxmin) * (pymax - pymin)) as f64;
+        let cut_area = ((c_xmax - c_xmin) * (c_ymax - c_ymin)) as f64;
+        if orig_area <= 0.0 || (cut_area / orig_area) < MIN_VISIBLE_AREA_RATIO {
             continue;
         }
 
@@ -125,4 +138,45 @@ pub fn labels_for_tile(
         ));
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_labels_for_tile_filters_tiny_boundary_slivers() {
+        let labels = vec![
+            // Full interior car (100x50 inside tile 0..1152) -> 100% visible
+            ParsedLabel {
+                class_id: 0,
+                xmin: 100,
+                ymin: 100,
+                xmax: 200,
+                ymax: 150,
+            },
+            // Cut sliver (only 20/100 width = 20% visible < 35%) -> filtered out
+            ParsedLabel {
+                class_id: 1,
+                xmin: 1132,
+                ymin: 300,
+                xmax: 1232,
+                ymax: 360,
+            },
+            // Half-visible object (60/100 width = 60% visible >= 35%) -> kept clipped
+            ParsedLabel {
+                class_id: 2,
+                xmin: 1092,
+                ymin: 500,
+                xmax: 1192,
+                ymax: 540,
+            },
+        ];
+
+        let txt = labels_for_tile(&labels, 0, 0, 1152);
+        let lines: Vec<&str> = txt.lines().collect();
+        assert_eq!(lines.len(), 2);
+        assert!(lines[0].starts_with("0 "));
+        assert!(lines[1].starts_with("2 "));
+    }
 }
