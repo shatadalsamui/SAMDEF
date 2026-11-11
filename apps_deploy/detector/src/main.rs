@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use std::thread;
 
 mod modules;
+use modules::data::benchmark::{build_summary, write_summary};
 use modules::data::buffer_pool::TileBytePool;
 use modules::data::task::PipelineMessage;
 use modules::io::consumer::run_consumer;
@@ -22,15 +23,16 @@ async fn main() -> Result<()> {
     let input_dir = PathBuf::from(env::var("INPUT_DIR").expect("INPUT_DIR must be set in .env"));
     let output_dir = PathBuf::from(env::var("OUTPUT_DIR").expect("OUTPUT_DIR must be set in .env"));
     let model_path = PathBuf::from(env::var("MODEL_PATH").expect("MODEL_PATH must be set in .env"));
+    let benchmark_path = env::var("BENCHMARK_SUMMARY_PATH").ok().filter(|s| !s.is_empty()).map(PathBuf::from);
     let batch_size: usize = env::var("BATCH_SIZE")
         .unwrap_or_else(|_| "1".to_string())
         .parse::<usize>()
-        .expect("BATCH_SIZE must be a valid number in .env")
+        .expect("BATCH_SIZE must be a valid number")
         .max(1);
     let producer_parallelism: usize = env::var("PRODUCER_PARALLELISM")
         .unwrap_or_else(|_| "4".to_string())
         .parse::<usize>()
-        .expect("PRODUCER_PARALLELISM must be a valid number in .env")
+        .expect("PRODUCER_PARALLELISM must be a valid number")
         .max(1);
 
     fs::create_dir_all(&output_dir)?;
@@ -39,10 +41,9 @@ async fn main() -> Result<()> {
     println!("Input: {:?}", input_dir);
     println!("Model: {:?}", model_path);
 
-    // Total pipeline timer
     let start_time = std::time::Instant::now();
 
-    // Widened ring buffer & matching pre-allocated planar tile buffer pool
+    // Pre-allocate planar tile buffers so producers avoid per-tile 4 MB heap allocs.
     let ring_capacity = (batch_size * 8).max(32);
     let tile_pool = TileBytePool::new(
         ring_capacity + producer_parallelism + 4,
@@ -51,22 +52,36 @@ async fn main() -> Result<()> {
     let consumer_tile_pool = tile_pool.clone();
     let (msg_tx, msg_rx) = channel::bounded::<PipelineMessage>(ring_capacity);
 
-    // Pass output_dir to consumer for per-file saving/publishing
+    let model_clone = model_path.clone();
     let consumer_handle = thread::spawn(move || {
-        run_consumer(msg_rx, model_path, output_dir, batch_size, consumer_tile_pool)
+        run_consumer(msg_rx, model_clone, output_dir, batch_size, consumer_tile_pool)
     });
     let producer_handle =
         thread::spawn(move || run_producer(input_dir, msg_tx, producer_parallelism, tile_pool));
 
-    let _ = producer_handle
+    producer_handle
         .join()
-        .map_err(|e| anyhow::anyhow!("Producer thread panicked: {:?}", e))?;
-    let _ = consumer_handle
+        .map_err(|e| anyhow::anyhow!("Producer thread panicked: {:?}", e))??;
+    let stats = consumer_handle
         .join()
-        .map_err(|e| anyhow::anyhow!("Consumer thread panicked: {:?}", e))?;
+        .map_err(|e| anyhow::anyhow!("Consumer thread panicked: {:?}", e))??;
 
-    let total_duration = start_time.elapsed();
+    let total_secs = start_time.elapsed().as_secs_f64();
     println!("Pipeline Complete.");
-    println!("Total pipeline execution time: {:.2?}", total_duration);
+    println!("Total pipeline execution time: {:.2}s", total_secs);
+
+    if let Some(summary_path) = benchmark_path {
+        let summary = build_summary(
+            &model_path,
+            TILE_SIZE,
+            batch_size,
+            producer_parallelism,
+            stats,
+            total_secs,
+        );
+        write_summary(&summary_path, &summary)?;
+        println!("Benchmark summary written to: {:?}", summary_path);
+    }
+
     Ok(())
 }

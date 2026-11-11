@@ -24,20 +24,25 @@ Machine-readable index of verified file paths for local AI models and coding age
 - `docs/extras.md` — Developer cargo check helper script.
 
 ### apps_deploy/detector/ (Inference Pipeline)
-- `apps_deploy/detector/README.md` — Detector architecture, 3-stage pipeline, and SAHI baseline comparison.
+- `apps_deploy/detector/README.md` — Detector architecture, 5-stage pipeline, `run_detector.sh`, and SAHI baseline comparison.
 - `apps_deploy/detector/Cargo.toml` — Crate manifest (ort, GDAL, Zenoh).
 
 - `apps_deploy/detector/Cargo.lock` — Locked dependency versions.
-- `apps_deploy/detector/.env.example` — Environment variable template.
+- `apps_deploy/detector/.env.example` — Environment variable template (`BATCH_SIZE`, `BENCHMARK_SUMMARY_PATH`, etc.).
+- `apps_deploy/detector/run_detector.sh` — Runner script logging telemetry and GPU metrics into `logs/`.
+- `apps_deploy/detector/logs/runs_history.csv` — Multi-run detector benchmark history across batch configurations.
 - `apps_deploy/detector/.aiexclude` — AI editing exclusions.
 - `apps_deploy/detector/docs/1_plan.md` — Detector architecture plan.
 - `apps_deploy/detector/docs/flow.md` — End-to-end detector data flow.
 - `apps_deploy/detector/docs/NMS.md` — Spatial-grid NMS implementation.
 - `apps_deploy/detector/docs/VirtualTiling.md` — Virtual tiling specifications.
-- `apps_deploy/detector/model/best_fp16_patched.onnx` — Patched FP16 ONNX model for GPU inference.
-- `apps_deploy/detector/src/main.rs` — Entry point (producer pool & 3-stage consumer).
+- `apps_deploy/detector/model/best_fp16_patched.onnx` — Legacy patched FP16 ONNX model.
+- `apps_deploy/detector/model/run15_FP16.onnx` — Active Run 15 FP16 ONNX model for GPU inference.
+- `apps_deploy/detector/src/main.rs` — Entry point (producer pool, 5-stage consumer, optional benchmark summary).
 - `apps_deploy/detector/src/modules/mod.rs` — Top-level module declarations.
 - `apps_deploy/detector/src/modules/data/mod.rs` — Data submodules export.
+- `apps_deploy/detector/src/modules/data/benchmark.rs` — `RunStats`, `SamdefBenchmarkSummary`, and JSON telemetry writer.
+- `apps_deploy/detector/src/modules/data/buffer_pool.rs` — `TileBytePool` and `CUDA_PINNED` tensor ring (`PinAcquirer`/`PinRecycler`).
 - `apps_deploy/detector/src/modules/data/payload.rs` — Detection payload structs.
 - `apps_deploy/detector/src/modules/data/results.rs` — JSON output & Zenoh publish triggers.
 - `apps_deploy/detector/src/modules/data/task.rs` — InferenceTask & PipelineMessage types.
@@ -87,7 +92,7 @@ Machine-readable index of verified file paths for local AI models and coding age
 - `apps_deploy/gui_gpui/src/io/exporter.rs` — GeoJSON, CSV & Markdown intelligence report exporters.
 - `apps_deploy/gui_gpui/src/model/mod.rs` — Model submodule exports.
 - `apps_deploy/gui_gpui/src/model/detection.rs` — FinalOutput JSON schema & ground footprint calculations.
-- `apps_deploy/gui_gpui/src/model/palette.rs` — 8 neon class colors & RGBA/HSLA helpers.
+- `apps_deploy/gui_gpui/src/model/palette.rs` — 15 neon class colors & RGBA/HSLA helpers.
 - `apps_deploy/gui_gpui/src/ui/mod.rs` — UI component module exports.
 - `apps_deploy/gui_gpui/src/ui/theme.rs` — Dark GIS color tokens & reusable button/input primitives.
 - `apps_deploy/gui_gpui/src/ui/titlebar.rs` — Client-side window titlebar (Move/Min/Max/F11/Close) & resize strips.
@@ -98,7 +103,7 @@ Machine-readable index of verified file paths for local AI models and coding age
 - `apps_deploy/gui_gpui/src/ui/table_drawer.rs` — Occluded bottom detection table drawer & live search filter.
 - `apps_deploy/gui_gpui/src/ui/sidebar/mod.rs` — Scrollable left sidebar container & header.
 - `apps_deploy/gui_gpui/src/ui/sidebar/file_nav.rs` — Editable dir scanner, instant file search & dropdown picker.
-- `apps_deploy/gui_gpui/src/ui/sidebar/class_panel.rs` — 8-class visibility toggles, counts & toggleable Solo.
+- `apps_deploy/gui_gpui/src/ui/sidebar/class_panel.rs` — 15-class visibility toggles, counts & toggleable Solo.
 - `apps_deploy/gui_gpui/src/ui/sidebar/confidence_panel.rs` — Interactive drag/click confidence slider & ASCII steppers.
 - `apps_deploy/gui_gpui/src/ui/sidebar/telemetry_export.rs` — Scene GIS telemetry card & export triggers.
 - `apps_deploy/gui_gpui/src/viewer/mod.rs` — Viewer module exports.
@@ -111,6 +116,7 @@ Machine-readable index of verified file paths for local AI models and coding age
 - `apps_deploy/post_processor/Cargo.toml` — Crate manifest (image, imageproc, tiff).
 - `apps_deploy/post_processor/Cargo.lock` — Locked dependency versions.
 - `apps_deploy/post_processor/.env.example` — Configuration template (JSON_DIR, OUTPUT_DIR).
+- `apps_deploy/post_processor/src/config.rs` — CLI/env config & GeoTIFF discovery supporting SAMDEF and SAHI JSON schemas.
 - `apps_deploy/post_processor/src/main.rs` — Draws hollow boxes on GeoTIFFs and saves PNGs.
 
 ### apps_training/image_simulator/
@@ -151,26 +157,38 @@ Machine-readable index of verified file paths for local AI models and coding age
 
 ### baseline_comparison_SAHI/ (Baseline Benchmark Harness)
 - `baseline_comparison_SAHI/README.md` — Benchmark setup, protocols, and comparative results.
-- `baseline_comparison_SAHI/run_benchmark.sh` — Automated benchmark execution script.
+- `baseline_comparison_SAHI/run_full_comparison.sh` — Runs live SAMDEF + GPU telemetry, then SAHI & comparison report.
+- `baseline_comparison_SAHI/run_benchmark.sh` — Automated SAHI benchmark execution script.
+- `baseline_comparison_SAHI/run_post_processor.sh` — SAHI detection visualizer wrapper.
 - `baseline_comparison_SAHI/requirements.txt` — Python dependencies for SAHI benchmarking.
-- `baseline_comparison_SAHI/configs/benchmark_config.yaml` — Benchmark configuration (1152px, 20% overlap, CUDA).
+- `baseline_comparison_SAHI/configs/benchmark_config.yaml` — Benchmark configuration (1152px, 20% overlap, batch_size=1, CUDA).
 - `baseline_comparison_SAHI/model/run15_FP16.onnx` — Identical ONNX model used in detector.
 - `baseline_comparison_SAHI/src/sahi_model.py` — Custom SAHI `DetectionModel` wrapper for YOLO ONNX on CUDA.
-- `baseline_comparison_SAHI/src/benchmark_runner.py` — GDAL loader, SAHI slicing loop, and timing instrumentation.
-- `baseline_comparison_SAHI/src/report_generator.py` — Markdown comparison table and metric aggregator.
+- `baseline_comparison_SAHI/src/benchmark_runner.py` — GDAL loader, SAHI slicing loop, and live `samdef_summary.json` comparator.
+- `baseline_comparison_SAHI/src/run_logger.py` — GPU telemetry CSV summarizer and multi-run `logs/` archiver.
+- `baseline_comparison_SAHI/src/post_processor.py` — Draws bounding boxes over GeoTIFFs from SAHI `*_results.json`.
+- `baseline_comparison_SAHI/src/report_generator.py` — Markdown comparison table and GPU telemetry reporter.
+- `baseline_comparison_SAHI/logs/runs_history.csv` — Cumulative multi-run SAHI vs SAMDEF comparison history.
+- `baseline_comparison_SAHI/results/samdef_summary.json` — Live measured SAMDEF run telemetry.
+- `baseline_comparison_SAHI/results/samdef_gpu_metrics.json` — Live sampled `nvidia-smi` GPU metrics for SAMDEF.
+- `baseline_comparison_SAHI/results/benchmark_summary.json` — Combined SAHI + SAMDEF benchmark metrics.
+- `baseline_comparison_SAHI/results/comparison_report.md` — Generated Markdown benchmark report.
 
 
 
 ---
 
 ## 2. Application Entry Points
+- `apps_deploy/detector/run_detector.sh` — Detector runner with GPU telemetry and `logs/` archiving.
 - `apps_deploy/detector/src/main.rs` — Detector (producer/consumer inference engine).
 - `apps_deploy/db_processor/src/main.rs` — DB Processor (Zenoh subscriber -> PostGIS).
 - `apps_deploy/gui_gpui/src/main.rs` — GUI GPUI (GPU-accelerated Desktop GIS Viewer).
 - `apps_deploy/post_processor/src/main.rs` — Post Processor (annotated PNG generator).
 - `apps_training/ingestor/src/main.rs` — Ingestor (GeoTIFF tile + YOLO label generator).
 - `apps_training/yolo_model_trainer/src/main.py` — Model Trainer (PyTorch/YOLO CLI).
+- `baseline_comparison_SAHI/run_full_comparison.sh` — Paired live SAMDEF + SAHI benchmark runner.
 - `baseline_comparison_SAHI/run_benchmark.sh` — SAHI Baseline Benchmark runner.
+- `baseline_comparison_SAHI/run_post_processor.sh` — SAHI result PNG annotator.
 
 
 ---
@@ -184,7 +202,7 @@ Machine-readable index of verified file paths for local AI models and coding age
 | GUI rendering / controls | `apps_deploy/gui_gpui/src/viewer/render.rs`, `apps_deploy/gui_gpui/src/ui/sidebar/file_nav.rs`, `apps_deploy/gui_gpui/src/ui/sidebar/class_panel.rs`, `apps_deploy/gui_gpui/src/app/events.rs` |
 | Dataset tiling / labeling | `apps_training/ingestor/src/main.rs`, `apps_training/ingestor/src/modules/image_utils.rs`, `apps_training/ingestor/src/modules/labeler.rs` |
 | Model training & export | `apps_training/yolo_model_trainer/src/main.py`, `apps_training/yolo_model_trainer/src/cortex/trainer.py`, `apps_training/yolo_model_trainer/ReadMe.md` |
-| Baseline comparison / SAHI | `baseline_comparison_SAHI/run_benchmark.sh`, `baseline_comparison_SAHI/src/benchmark_runner.py`, `baseline_comparison_SAHI/configs/benchmark_config.yaml` |
+| Baseline comparison / SAHI | `baseline_comparison_SAHI/run_full_comparison.sh`, `baseline_comparison_SAHI/run_benchmark.sh`, `baseline_comparison_SAHI/run_post_processor.sh`, `baseline_comparison_SAHI/src/benchmark_runner.py`, `baseline_comparison_SAHI/src/post_processor.py`, `baseline_comparison_SAHI/configs/benchmark_config.yaml` |
 
 
 ---

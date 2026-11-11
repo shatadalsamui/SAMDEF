@@ -1,78 +1,76 @@
-# SAHI Baseline Comparison Harness (`baseline_comparison_SAHI`)
+# SAHI Baseline Comparison (`baseline_comparison_SAHI`)
 
-This directory provides a reproducible benchmark harness comparing **SAHI** (*Slicing Aided Hyper Inference*) against **SAMDEF**'s streaming Rust pipeline.
+Reproducible benchmark comparing **SAHI** (*Slicing Aided Hyper Inference*, Python + ONNX Runtime CUDA) against **SAMDEF** (`samdef_detector`, Rust + ONNX Runtime CUDA) using identical weights, tile geometry, thresholds, and dataset.
 
----
+## Live Measured Results (281 GeoTIFF Scenes)
 
-## Benchmark Results: SAMDEF vs. SAHI (281 Multi-Band GeoTIFF Images)
+Measured end-to-end via `./run_full_comparison.sh` on an **NVIDIA GeForce RTX 4060 Laptop GPU** (`run15_FP16.onnx`):
 
-Both systems evaluated on the **identical 281 multi-band GeoTIFF images** using the **identical ONNX model weights (`run15_FP16.onnx`)** executed on an **NVIDIA GeForce RTX 4060 Laptop GPU (8GB GDDR6)** via ONNX Runtime CUDA:
-
-| Metric | SAHI Baseline (Python + CUDA) | SAMDEF (Rust Engine) | Advantage / Speedup |
+| Metric | SAHI (Python + CUDA) | SAMDEF (Rust + CUDA) | Notes |
 | :--- | :--- | :--- | :--- |
-| **Model & Weights** | `run15_FP16.onnx` (FP16 Tensor Cores) | `run15_FP16.onnx` (FP16 Tensor Cores) | **Identical weights** |
-| **Execution Provider** | ONNX Runtime `CUDAExecutionProvider` | ONNX Runtime `CUDAExecutionProvider` | **Identical hardware & CUDA runtime** |
-| **Tile Resolution** | $1152 \times 1152$ | $1152 \times 1152$ | **Identical tile size** |
-| **Tile Overlap** | 20% overlap (`stride = 922`) | 20% overlap (`stride = 922`) | **Exact same spatial stride** |
-| **Classes** | 15 Classes | 15 Classes | **Identical class mapping** |
-| **Confidence Cutoff**| `0.01` | `0.01` | **Identical detection threshold** |
-| **Dataset Evaluated** | 281 GeoTIFF images | 281 GeoTIFF images | **Exact same imagery** |
-| **Total Wall-Clock Time** | **99.07 s** | **49.83 s** | **SAMDEF is 2.0× FASTER** |
+| **Model & Weights** | `run15_FP16.onnx` | `run15_FP16.onnx` | Identical weights |
+| **Execution Provider** | `CUDAExecutionProvider` | `CUDAExecutionProvider` | Shared GPU & CUDA runtime |
+| **Tile Resolution / Overlap** | `1152x1152`, 20% | `1152x1152`, 20% (`stride=922`) | Matched geometry |
+| **Batch Size / Threshold** | `1` / `0.01` | `1` / `0.01` | Matched config |
+| **Dataset** | 281 GeoTIFF images | 281 GeoTIFF images | Identical dataset |
+| **Total Detections** | 575,876 | 520,192 | Threshold parity |
+| **Total Wall-Clock Time** | **93.15 s** | **46.54 s** | **SAMDEF 2.0x faster** |
+| **Mean Time / Image** | 0.3201 s | 0.1656 s | 2.0x speedup |
+| **Throughput** | 3.017 img/s (181.0 /min) | 6.037 img/s (362.24 /min) | 2.0x speedup |
+| **GPU Utilization (Mean / Max)** | 41.6% / 59.0% | **95.4% / 99.0%** | Continuous GPU feed |
+| **Peak VRAM Used** | 1,229 MiB | **519 MiB** | Lower device memory |
 
+Multi-run history is logged in [`logs/runs_history.csv`](logs/runs_history.csv) (including paired `batch_size=1` `2.0x` and `batch_size=2` `4.98x` comparisons across all 281 scenes).
 
----
-
-## 1. Benchmark Methodology
-
-
-Controlled test configuration across both systems:
-- **Identical Model**: Both systems run the exact same ONNX model ([`model/run15_FP16.onnx`](model/run15_FP16.onnx)) with FP16 Tensor Core weights.
-- **Identical Execution Engine**: Both run on ONNX Runtime with `CUDAExecutionProvider` on the same NVIDIA RTX 4060 GPU.
-- **Identical Slicing Dimensions**: Both slice GeoTIFF imagery into $1152 \times 1152$ tiles with 20% overlap (`overlap_ratio=0.20`, matching SAMDEF's 922 stride).
-- **Identical Validation Dataset**: Both process the same 281 multi-band GeoTIFF images from `/home/shatadal/SAMDEF_DATA/val_images`.
-- **Identical Thresholds**: Confidence threshold: `0.01`, IoU threshold: `0.45`.
-
----
-
-## 2. Directory Layout
+## Directory Layout
 
 ```text
 baseline_comparison_SAHI/
-├── configs/
-│   └── benchmark_config.yaml    # Declarative YAML: model path, dataset path, 1152px slice, 0.20 overlap
-├── model/
-│   └── run15_FP16.onnx          # Standalone copy of the Run 15 YOLO ONNX model
+├── configs/benchmark_config.yaml   # Slice geometry, batch_size=1, dataset paths, SAMDEF telemetry paths
+├── model/run15_FP16.onnx           # Copy of Run 15 FP16 ONNX model
 ├── src/
-│   ├── __init__.py
-│   ├── sahi_model.py            # Custom SAHI DetectionModel running run15_FP16.onnx on CUDA
-│   ├── benchmark_runner.py      # End-to-end benchmark runner across 281 GeoTIFFs
-│   └── report_generator.py      # Generates markdown comparison tables & throughput metrics
-├── results/                     # Per-image detection JSONs and benchmark_summary.json
-├── requirements.txt             # Python dependencies
-└── run_benchmark.sh             # Execution script
+│   ├── sahi_model.py               # SAHI DetectionModel wrapper for ONNX CUDA
+│   ├── benchmark_runner.py         # SAHI benchmark loop + live samdef_summary.json comparator
+│   ├── run_logger.py               # GPU CSV summarizer, logs/ archiver, and runs_history.csv writer
+│   ├── post_processor.py           # Visualizer drawing SAHI *_results.json -> *_annotated.png
+│   └── report_generator.py         # Generates results/comparison_report.md
+├── logs/
+│   ├── runs_history.csv            # Cumulative multi-run benchmark table
+│   ├── <run_id>_summary.json       # Archived per-run benchmark & GPU telemetry JSON
+│   ├── <run_id>_report.md          # Archived per-run Markdown comparison report
+│   └── <run_id>.log                # Raw stdout/stderr log (gitignored)
+├── results/
+│   ├── samdef_summary.json         # Latest live SAMDEF run telemetry
+│   ├── samdef_gpu_metrics.json     # Latest SAMDEF nvidia-smi sample summary
+│   ├── benchmark_summary.json      # Latest combined SAHI + SAMDEF benchmark JSON
+│   ├── comparison_report.md        # Latest auto-generated comparison report
+│   └── *_results.json              # Per-image detection JSONs (gitignored)
+├── annotated_results/              # Rendered PNG overlays (gitignored)
+├── run_full_comparison.sh          # Invokes ../apps_deploy/detector/run_detector.sh + run_benchmark.sh
+├── run_benchmark.sh                # Runs SAHI benchmark + logs GPU metrics & run archive
+└── run_post_processor.sh           # Annotates SAHI results using src/post_processor.py
 ```
 
----
+## Usage
 
-## 3. Running the Benchmark
+### Run Full Paired Comparison (Recommended)
+Calls `../apps_deploy/detector/run_detector.sh` + `nvidia-smi`, runs SAHI with GPU telemetry, updates `results/`, and archives the run in `logs/`:
+```bash
+cd baseline_comparison_SAHI
+./run_full_comparison.sh
+./run_full_comparison.sh --batch 2 --tag b2 --no-build
+```
 
-### One-Command Execution:
+### Run SAHI Standalone
 ```bash
 cd baseline_comparison_SAHI
 ./run_benchmark.sh
+./run_benchmark.sh --limit 10 --tag smoke
 ```
 
-### Or using Python directly:
+### Annotate SAHI Results (`*_results.json` -> `*_annotated.png`)
 ```bash
-/home/shatadal/PROJECTS/SAMDEF/apps_training/yolo_model_trainer/venv/bin/python3 src/benchmark_runner.py --config configs/benchmark_config.yaml
+cd baseline_comparison_SAHI
+./run_post_processor.sh --conf 0.25 --thickness 2 --labels
 ```
-
-The script will:
-1. Initialize the ONNX Runtime CUDA session for `model/run15_FP16.onnx`.
-2. Process all 281 GeoTIFF images through SAHI's `get_sliced_prediction` ($1152 \times 1152$, 20% overlap).
-3. Record high-precision execution timings.
-4. Save detection JSONs to `results/`.
-5. Output `results/benchmark_summary.json` and `results/comparison_report.md` comparing SAHI directly with SAMDEF's verified **49.83s** baseline.
-
-
-
+*(The Rust `apps_deploy/post_processor` crate also renders both SAMDEF and SAHI `*_results.json` files.)*

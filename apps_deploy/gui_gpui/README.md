@@ -24,20 +24,27 @@ While `gui_iced` provides a solid baseline for visualizing detection outputs, `g
 
 ---
 
-## 8 NEON Target Classes
+## 15 NEON Target Classes
 
-The viewer preserves the standard 8-class SAMDEF detection schema with high-visibility neon vector overlays:
+The viewer renders the 15-class SAMDEF schema (`model/palette.rs`):
 
-| ID | Class Name | Neon Color | Hex Code |
-| :---: | :--- | :--- | :--- |
-| `0` | Long Truck | Neon Pink | `#FF0080` |
-| `1` | Boxy Truck | Neon Green | `#39FF14` |
-| `2` | Small Vehicle (Car) | Neon Cyan | `#00FFFF` |
-| `3` | Building | Neon Yellow | `#FFFF00` |
-| `4` | Container | Neon Magenta | `#FF00FF` |
-| `5` | Construction | Neon Aqua | `#00FF80` |
-| `6` | Tank | Neon Orange | `#FF6E00` |
-| `7` | Container Lot | Neon Blue-Green | `#00FFC8` |
+| ID | Class Name | Hex Color |
+| :---: | :--- | :--- |
+| `0` | Light Vehicle | `#00E5FF` |
+| `1` | Boxy Truck | `#39FF14` |
+| `2` | Long Truck | `#00FF88` |
+| `3` | Small Boat | `#2979FF` |
+| `4` | Large Ship | `#651FFF` |
+| `5` | Fixed Wing | `#FFFF00` |
+| `6` | Helicopter | `#FF6D00` |
+| `7` | Building | `#FF1744` |
+| `8` | Other Structure | `#FF5252` |
+| `9` | Storage Tank | `#D500F9` |
+| `10` | Container Lot | `#FFD600` |
+| `11` | Construction Site | `#FF9100` |
+| `12` | Railway | `#00BFA5` |
+| `13` | Engineering Machinery | `#F50057` |
+| `14` | Tower Pylon | `#E040FB` |
 
 ---
 
@@ -86,11 +93,14 @@ The viewer preserves the standard 8-class SAMDEF detection schema with high-visi
 | `Double-Click` | Focus & Magnify Target (or Fit View on background) |
 | `N` / `]` | Next Result / Image File |
 | `P` / `[` | Previous Result / Image File |
-| `1` – `8` | Toggle Visibility of Class 0 through 7 |
+| `1` – `8` | Quick-toggle visibility of classes 0–7 (all 15 classes are toggleable/soloable in the sidebar) |
 | `L` | Toggle Detection Labels & Badges |
 | `M` | Toggle Geodesic Ruler Measurement Tool |
 | `T` | Toggle Bottom Detections Table Drawer |
 | `G` | Toggle Grayscale Panchromatic Mode |
+| `Ctrl+F` / `/` | Focus File Search |
+| `F11` | Toggle Fullscreen |
+| `Ctrl+Q` | Quit |
 
 ---
 
@@ -110,7 +120,7 @@ apps_deploy/gui_gpui/
     │   └── view.rs             # Root Render tree & live viewport bounds capture
     ├── model/
     │   ├── detection.rs        # BBoxCoords, FinalOutput & DisplayDetection
-    │   └── palette.rs          # 8 neon target colors & RGBA/HSLA helpers
+    │   └── palette.rs          # 15 neon target colors & RGBA/HSLA helpers
     ├── io/
     │   ├── file_scanner.rs     # Dataset directory scanner & path resolution
     │   ├── tiff_loader.rs      # Planar & chunky zero-copy BGRA GeoTIFF strip decoder

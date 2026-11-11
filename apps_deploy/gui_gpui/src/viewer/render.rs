@@ -46,9 +46,7 @@ pub fn paint_viewer(
     let vx: f32 = viewport.origin.x.into();
     let vy: f32 = viewport.origin.y.into();
 
-    // =========================================================
-    // LAYER 1: Base Satellite Raster Texture (Dedicated Layer)
-    // =========================================================
+    // Layer 1: Base satellite raster texture
     window.paint_layer(viewport, |window| {
         let img_bounds = Bounds::new(point(px(img_x), px(img_y)), size(px(img_w), px(img_h)));
         let _ = window.paint_image(
@@ -69,9 +67,7 @@ pub fn paint_viewer(
         });
     });
 
-    // =========================================================
-    // LAYER 2: Dynamic Neon Vector Bounding Boxes & Brackets
-    // =========================================================
+    // Layer 2: Neon vector bounding boxes and brackets
     let base_thickness: f32 = if state.scale <= 1.15 {
         1.25
     } else if state.scale < 2.5 {

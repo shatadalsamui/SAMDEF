@@ -1,0 +1,3 @@
+run_id,timestamp_utc,tag,git_sha,model_file,batch_size,dataset_limit,total_images,sahi_detections,samdef_detections,sahi_wall_clock_s,samdef_wall_clock_s,speedup_x,sahi_img_per_s,samdef_img_per_s,sahi_mean_gpu_pct,sahi_peak_vram_mib,samdef_mean_gpu_pct,samdef_peak_vram_mib,samdef_source
+run_20261111_230758_b2_b2,2026-11-11T17:42:04Z,b2,0905ce0,run15_FP16.onnx,2,,281,575882,520213,244.39,49.11,4.98,1.15,5.722,17.2,1486,94.6,790,measured_json
+run_20261111_231252_b1_cmp,2026-11-11T17:44:26Z,cmp,0905ce0,run15_FP16.onnx,1,,281,575876,520192,93.15,46.54,2.0,3.017,6.037,41.6,1229,95.4,519,measured_json

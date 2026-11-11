@@ -31,22 +31,21 @@
 
 ## Performance Benchmark: SAMDEF vs. SAHI Baseline
 
-Both systems evaluated on the **identical 281 multi-band GeoTIFF images** using the **identical model (`run15_FP16.onnx`)** executed with `CUDAExecutionProvider` on an **NVIDIA GeForce RTX 4060 Laptop GPU**:
+Measured on the **same 281 multi-band GeoTIFF scenes** using **`run15_FP16.onnx`** on an **NVIDIA GeForce RTX 4060 Laptop GPU** (`1152x1152` tiles, 20% overlap / stride `922`, `batch_size=1`, confidence `0.01`):
 
 | Metric | SAHI Baseline (Python + CUDA) | SAMDEF (Rust Engine) | Advantage / Speedup |
 | :--- | :--- | :--- | :--- |
-| **Model & Weights** | `run15_FP16.onnx` (FP16 Tensor Cores) | `run15_FP16.onnx` (FP16 Tensor Cores) | **Identical weights** |
-| **Execution Engine** | ONNX Runtime CUDA | ONNX Runtime CUDA | **Identical hardware & runtime** |
-| **Tile Resolution** | $1152 \times 1152$ (20% overlap, stride 922) | $1152 \times 1152$ (20% overlap, stride 922) | **Identical tile size** |
-| **Classes** | 15 Classes | 15 Classes | **Identical class mapping** |
-| **Confidence Cutoff**| `0.01` | `0.01` | **Identical detection threshold** |
-| **Dataset Evaluated** | 281 GeoTIFF images | 281 GeoTIFF images | **Exact same imagery** |
-| **Total Wall-Clock Time** | **99.07 s** | **49.83 s** | **SAMDEF is 2.0× FASTER** |
+| **Model & Weights** | `run15_FP16.onnx` | `run15_FP16.onnx` | Identical weights |
+| **Execution Engine** | ONNX Runtime CUDA | ONNX Runtime CUDA | Same GPU & CUDA runtime |
+| **Images Evaluated** | 281 GeoTIFF images | 281 GeoTIFF images | Same dataset |
+| **Total Detections** | 575,876 | 520,192 | Threshold parity |
+| **Total Wall-Clock Time** | **93.15 s** | **46.54 s** | **SAMDEF is 2.0x faster** |
+| **Throughput** | 3.017 img/s (181.0 /min) | 6.037 img/s (362.24 /min) | 2.0x speedup |
+| **GPU Utilization (Mean / Max)** | 41.6% / 59.0% | **95.4% / 99.0%** | Continuous GPU feed |
+| **Peak VRAM Used** | 1,229 MiB | **519 MiB** | Lower device memory |
 
-
-> **Key Systems Insight:** While SAHI operates as a sequential stop-and-wait loop in Python (causing GPU starvation while reading disk or computing bounding-box merging), SAMDEF’s decoupled 3-stage streaming pipeline feeds the GPU continuously via lock-free Crossbeam queues, cutting wall-clock time cleanly in half without altering model weights.  
-> *Detailed architecture documentation:* [apps_deploy/detector/README.md](apps_deploy/detector/README.md)  
-> *Benchmark harness:* [baseline_comparison_SAHI/README.md](baseline_comparison_SAHI/README.md)
+> **Why SAMDEF is faster:** SAHI runs sequentially in Python (**41.6% mean GPU utilization**), whereas SAMDEF's producer pool + 5-stage consumer pipeline reuses `TileBytePool` buffers and a `CUDA_PINNED` tensor ring with a static `cuda_in` CUDA Graph binding, holding **95.4% mean / 99.0% max GPU utilization** (`nvidia-smi` @ `250 ms`, `519 MiB` peak VRAM).  
+> *Telemetry artifacts:* [samdef_summary.json](baseline_comparison_SAHI/results/samdef_summary.json) | [samdef_gpu_metrics.json](baseline_comparison_SAHI/results/samdef_gpu_metrics.json) | [benchmark_summary.json](baseline_comparison_SAHI/results/benchmark_summary.json) | [comparison_report.md](baseline_comparison_SAHI/results/comparison_report.md) | [detector/logs](apps_deploy/detector/logs/runs_history.csv) | [SAHI/logs](baseline_comparison_SAHI/logs/runs_history.csv)
 
 ---
 
@@ -161,24 +160,13 @@ To view the images at full size, right-click the link and select "Open link in n
 | [2473.png](https://shatadalsamui.github.io/images/2473.png) | [2473_annotated.png](https://shatadalsamui.github.io/images/2473_annotated.png) |
 | [2613.png](https://shatadalsamui.github.io/images/2613.png) | [2613_annotated.png](https://shatadalsamui.github.io/images/2613_annotated.png) |
 
-### Inference Timing Results (YOLO26s, FP16)
+### Inference Timing Summary (`run15_FP16.onnx`)
 
-- **Dataset:** 281 images (~3000×3000 pixels each, 0.3m GSD)
-- **Total area:** 227.61 km²
-- **Hardware Profile:** CUDA Core utilization maintained at 85–95% with decoupled 3-stage pipelining. VRAM footprint remained under 1.5GB for Batch Size 2.
-
-| Provider | Model        | Batch Size | Total Time (sec) | Time per km² (sec) | Notes                        |
-|----------|--------------|------------|------------------|--------------------|------------------------------|
-| GPU      | YOLO26s FP16 | 2          | 44.59            | 0.20               | RTX 4060, full FP16 accel    |
-| CPU      | YOLO26s FP16 | 4          | 999              | 4.39               | i9-13900HX, FP16 emulated    |
-
-**Specs:** i9-13900HX, 48GB RAM, RTX 4060  
-**Dataset:** 281 images, 3000×3000 px, 0.3m GSD, 227.61 km² total
-
-- **Interpretation:**  
-  - CPU is ~22x slower than GPU for this workload, which matches expectations for FP16 emulation on a high-end CPU.
-  - Time per km² is a useful metric for scaling to larger areas or comparing with other systems.
-  - Both CPU and GPU performance are strong for a lightweight model like YOLO26s.
+- **Dataset:** 281 GeoTIFF images (~3000×3000 px each)
+- **GPU Telemetry (`RTX 4060 Laptop GPU`):** SAMDEF **95.4% mean / 99.0% max GPU utilization**, **519 MiB peak VRAM** vs SAHI **41.6% mean / 59.0% max GPU**, **1,229 MiB peak VRAM** (`nvidia-smi` @ `250 ms`)
+- **SAMDEF Runtime:** **46.54 s** (`0.1656 s/img`, `6.037 img/s`, `362.24 /min`) at `BATCH_SIZE=1`, `PRODUCER_PARALLELISM=4` (sweep logs in [`apps_deploy/detector/logs/runs_history.csv`](apps_deploy/detector/logs/runs_history.csv))
+- **SAHI Baseline Runtime:** **93.15 s** (`0.3201 s/img`, `3.017 img/s`, `181.0 /min`) at `batch_size=1`
+- Reproduce directly via `./baseline_comparison_SAHI/run_full_comparison.sh` or `./apps_deploy/detector/run_detector.sh`.
 
 ### Model Metrics (Validation Set)
 
@@ -289,28 +277,27 @@ The SAMDEF workflow consists of two main phases: **training** and **deployment**
 
 #### detector
 - **Documentation:** [apps_deploy/detector/README.md](apps_deploy/detector/README.md)
-- **Purpose:** High-performance object detection on large-scale geospatial imagery (GeoTIFF).
-- **How it works:** 
-  - Uses a decoupled 3-stage streaming pipeline with virtual tiling (`1152x1152` tiles with `922` stride, ~20% overlap).
-  - Normalizes tiles into planar FP32 tensors and feeds them into a dedicated GPU thread running YOLO26s FP16 inference on CUDA Tensor Cores with zero idle bubbles.
-  - Achieves **49.83s total execution time** across 281 GeoTIFF validation images (~177 ms per full satellite image) at `BATCH_SIZE=1`, outperforming SAHI by **2.0×** (49.83s vs 99.07s).
-  - Results are post-processed to global coordinates using an $\mathcal{O}(n)$ spatial hash grid NMS, filtered across 15 classes, and exported asynchronously as GeoJSON / Zenoh telemetry.
-- **Key features:** Decoupled 3-stage streaming, lock-free Crossbeam ring buffers, virtual tiling, dedicated GPU execution loop, direct FP32 host IO, spatial grid NMS, Zenoh publisher.
+- **Purpose:** Streaming object detection on large GeoTIFF imagery.
+- **How it works:**
+  - Producer threads borrow reusable planar buffers (`TileBytePool`) and read `1152x1152` tiles (stride `922`, ~20% overlap) via GDAL.
+  - A 5-stage consumer runs L1-LUT preprocessing into a `CUDA_PINNED` tensor ring, static `cuda_in` CUDA Graph inference, per-scene aggregation, isolated Rayon boundary-aware grid NMS across 15 classes, and async JSON + Zenoh export (plus optional `BENCHMARK_SUMMARY_PATH` telemetry).
+  - Runs all 281 validation GeoTIFFs in **46.54 s** (`6.037 img/s`) at `BATCH_SIZE=1`, outperforming SAHI by **2.0x** (**93.15 s**), and archives per-run telemetry into `logs/` when launched via `./run_detector.sh`.
+- **Key features:** Producer pool + 5-stage consumer, `TileBytePool` & `CUDA_PINNED` rings, static `IoBinding` CUDA Graph, isolated Rayon seam/grid NMS, Zenoh publisher.
 - **Folder structure:**
-  - `src/`: Rust source code for tiling, inference, pre/postprocessing, and Zenoh publishing.
+  - `src/`: Rust source code for tiling, buffer pools, inference, NMS, and Zenoh publishing.
   - `model/`: Exported FP16 ONNX model (`run15_FP16.onnx`).
-  - `README.md`: Exhaustive architecture documentation and SAHI baseline comparison.
+  - `README.md`: Architecture overview and build/run steps.
 
 
 #### post_processor
 - **Purpose:** Visualization and annotation of detection results.
-- **How it works:** 
-  - Reads JSON outputs from the detector.
-  - Loads original GeoTIFF images and draws bounding boxes with 15-class high-contrast neon colors.
-  - Saves annotated images for review and analysis.
-- **Key features:** High-fidelity image annotation, 15-class color coding, efficient handling of large images.
+- **How it works:**
+  - Reads `*_results.json` outputs from either `samdef_detector` or `baseline_comparison_SAHI`.
+  - Loads original GeoTIFF images and draws hollow bounding boxes across 15 high-contrast neon classes (configurable via `.env` or CLI flags `--json-dir`, `--output-dir`, `--image-dir`).
+  - Saves annotated PNGs (`run_post_processor.sh` provides the Python equivalent inside `baseline_comparison_SAHI/`).
+- **Key features:** Cross-schema JSON support (SAMDEF + SAHI), 15-class color coding, large-image PNG export.
 - **Folder structure:**
-  - `src/`: Rust source code for image annotation and visualization.
+  - `src/`: Rust source (`main.rs`, `config.rs`) for CLI/env parsing and image annotation.
 
 #### db_processor
 - **Purpose:** Database operations for detection results.
@@ -419,17 +406,23 @@ To run the main detection and deployment pipeline, launch the Rust microservices
 2. **Start the Detector (GPU Inference):**
    ```bash
    cd apps_deploy/detector
-   cargo run --release
+   ./run_detector.sh
    ```
 3. **Run the Post Processor (Image Annotation):**
    ```bash
    cd apps_deploy/post_processor
    cargo run --release
    ```
-4. **Launch the Interactive GIS Viewer (gui_gpui):**
+4. **Launch the Interactive GIS Viewer (`gui_gpui`):**
    ```bash
    cd apps_deploy/gui_gpui
    cargo run --release
+   ```
+5. **Run Full SAMDEF vs SAHI Benchmark & Annotate SAHI Outputs:**
+   ```bash
+   cd baseline_comparison_SAHI
+   ./run_full_comparison.sh
+   ./run_post_processor.sh --conf 0.25 --thickness 2 --labels
    ```
 
 ### Training Pipeline

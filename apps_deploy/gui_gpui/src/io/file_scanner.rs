@@ -26,7 +26,11 @@ pub fn scan_json_directory<P: AsRef<Path>>(dir: P) -> Result<Vec<PathBuf>, Strin
     let mut files = Vec::new();
     for entry in entries.flatten() {
         let path = entry.path();
-        if path.extension().is_some_and(|ext| ext == "json") {
+        let is_summary = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .is_some_and(|n| n == "benchmark_summary.json");
+        if !is_summary && path.extension().is_some_and(|ext| ext == "json") {
             files.push(path);
         }
     }

@@ -1,3 +1,4 @@
+use crate::modules::data::benchmark::RunStats;
 use crate::modules::data::buffer_pool::{create_pinned_tensor_ring, PinAcquirer, TileBytePool};
 use crate::modules::data::results::save_resolved_scene;
 use crate::modules::data::task::{InferenceTask, PipelineMessage};
@@ -56,24 +57,19 @@ pub async fn run_consumer(
     output_dir: PathBuf,
     batch_size: usize,
     tile_byte_pool: TileBytePool,
-) -> Result<()> {
+) -> Result<RunStats> {
     const GPU_QUEUE_CAP: usize = 6;
 
-    // Channels connecting the 5 isolated pipeline stages:
-    // Stage 1 (CPU Preprocessor) -> Stage 2 (Pure GPU CUDA Runner)
+    // 5 isolated stages: Stage 1 Preproc -> Stage 2 GPU -> Stage 3 Aggregator -> Stage 4 NMS -> Stage 5 I/O.
     let (gpu_tx, gpu_rx) = channel::bounded::<Option<GpuBatch>>(GPU_QUEUE_CAP);
-    // One-shot handoff so GPU thread creates Session + CUDA_PINNED ring cleanly on its own thread
     let (pin_acq_tx, pin_acq_rx) = channel::bounded::<PinAcquirer>(1);
-    // Stage 2 & Stage 1 -> Stage 3 (Dedicated Fast Tile Aggregator)
     let (post_tx, post_rx) = channel::bounded::<PostMessage>(128);
-    // Stage 3 -> Stage 4 (Dedicated Boundary-Aware NMS OS Thread)
     let (nms_tx, nms_rx) = channel::bounded::<NmsWorkItem>(64);
-    // Stage 4 -> Stage 5 (Tokio Async Disk Write & Zenoh Publisher)
     let (save_tx, mut save_rx) = mpsc::channel::<ResolvedScene>(64);
 
     let post_tx_eof = post_tx.clone();
 
-    // Stage 2: Pure GPU inference on dedicated OS thread (CUDA Graph + IoBinding)
+    // Stage 2: Dedicated GPU thread owns Session and CUDA Graph buffers.
     let gpu_handle = thread::spawn(move || -> Result<()> {
         const DEVICE_ID: i32 = 0;
         let session = initialize_session(&model_path, ExecutionProvider::Cuda { device_id: DEVICE_ID })?;
@@ -170,11 +166,15 @@ pub async fn run_consumer(
     let aggregator_handle = spawn_aggregator_worker(post_rx, nms_tx);
     let nms_handle = spawn_nms_worker(nms_rx, save_tx);
 
-    // Stage 5: Non-blocking Tokio sink for JSON serialization + Zenoh publishing
+    // Stage 5: Non-blocking Tokio sink for JSON writes and Zenoh publishing.
     let publisher = Arc::new(ZenohPublisher::new().await);
     let mut save_tasks = JoinSet::new();
+    let mut stats = RunStats::default();
 
     while let Some(scene) = save_rx.recv().await {
+        stats.total_images += 1;
+        stats.total_detections += scene.detections.len();
+
         let pub_clone = publisher.clone();
         let out_clone = output_dir.clone();
 
@@ -206,5 +206,5 @@ pub async fn run_consumer(
     let _ = aggregator_handle.join();
     let _ = nms_handle.join();
 
-    Ok(())
+    Ok(stats)
 }

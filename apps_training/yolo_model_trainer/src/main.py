@@ -44,8 +44,6 @@ def check_environment():
         print("Did you run the Rust ingestor?")
         sys.exit(1)
 
-    print("--------------------------------------------------")
-
 
 def main():
     print_banner()

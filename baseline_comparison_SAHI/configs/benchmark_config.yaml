@@ -13,7 +13,7 @@ slicing:
   overlap_height_ratio: 0.20
   overlap_width_ratio: 0.20
   perform_standard_pred: false    # Disable full-image downscaled prediction to match SAMDEF pure slicing
-  batch_size: 4                   # Batch size 1 matches SAMDEF detector and maximizes GPU kernel efficiency
+  batch_size: 1                   # Match SAMDEF BATCH_SIZE=1 for fair 1:1 GPU batching parity
 
 
 postprocess:
@@ -28,6 +28,8 @@ dataset:
   limit: null                     # Set to integer (e.g. 5) for smoke test, null for full 281 scenes
 
 
-samdef_baseline:
-  runtime_seconds: 49.83          # Verified SAMDEF pipeline execution time on 281 images
-  scenes_count: 281
+samdef:
+  summary_path: "results/samdef_summary.json"
+  gpu_metrics_path: "results/samdef_gpu_metrics.json"
+  fallback_runtime_seconds: null
+  fallback_scenes_count: null

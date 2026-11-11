@@ -1,3 +1,4 @@
+pub mod benchmark;
 pub mod buffer_pool;
 pub mod task;
 pub mod results;

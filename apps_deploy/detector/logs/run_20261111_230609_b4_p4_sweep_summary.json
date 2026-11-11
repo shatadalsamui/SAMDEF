@@ -1,0 +1,29 @@
+{
+  "run_id": "run_20261111_230609_b4_p4_sweep",
+  "timestamp_utc": "2026-11-11T17:36:09Z",
+  "tag": "sweep",
+  "git_sha": "0905ce0",
+  "framework": "SAMDEF (Rust + ort CUDA)",
+  "timestamp_unix_s": 1794418619,
+  "model_file": "run15_FP16.onnx",
+  "slice_size": "1152x1152",
+  "overlap": "20%",
+  "batch_size": 4,
+  "producer_parallelism": 4,
+  "total_images": 281,
+  "total_wall_clock_seconds": 50.52,
+  "mean_seconds_per_image": 0.1798,
+  "throughput_images_per_second": 5.562,
+  "throughput_scenes_per_minute": 333.71,
+  "total_detections": 520180,
+  "gpu_metrics": {
+    "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "sample_interval_ms": 250,
+    "samples_count": 203,
+    "mean_gpu_util_pct": 95.8,
+    "max_gpu_util_pct": 100.0,
+    "mean_mem_util_pct": 60.9,
+    "max_mem_util_pct": 68.0,
+    "peak_vram_used_mib": 1349
+  }
+}

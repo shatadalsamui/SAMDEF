@@ -1,0 +1,10 @@
+{
+  "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "sample_interval_ms": 250,
+  "samples_count": 187,
+  "mean_gpu_util_pct": 95.4,
+  "max_gpu_util_pct": 99.0,
+  "mean_mem_util_pct": 38.9,
+  "max_mem_util_pct": 42.0,
+  "peak_vram_used_mib": 519
+}

@@ -1,17 +1,24 @@
-# Rust
+# Rust build outputs
 /target/
 **/target/
 
+# Local raw imagery & outputs
 /raw_data
+apps_deploy/detector/results/
+apps_deploy/post_processor/results/
+annotated_results/
+baseline_comparison_SAHI/annotated_results/
+
+# SAHI benchmark: keep only tiny summary/report files tracked, ignore per-scene JSONs
+baseline_comparison_SAHI/results/*
+!baseline_comparison_SAHI/results/benchmark_summary.json
+!baseline_comparison_SAHI/results/samdef_summary.json
+!baseline_comparison_SAHI/results/samdef_gpu_metrics.json
+!baseline_comparison_SAHI/results/comparison_report.md
 
 # Python
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
-*.pyc
-*.pyo
-*.pyd
 .Python
 env/
 venv/
@@ -23,67 +30,54 @@ venv.bak/
 dist/
 build/
 pip-wheel-metadata/
+.pytest_cache/
+.ruff_cache/
 
-# Byte-compiled / optimized / DLL files
+# Compiled / binary / weight artifacts
 *.so
 *.dll
 *.dylib
+*.bin
+*.weights
+*.tiff
+*.geotiff
 
-# Jupyter Notebook
+# Notebooks, editors & OS
 .ipynb_checkpoints
-
-# VSCode
 .vscode/
-
-# OS files
 .DS_Store
 Thumbs.db
 
-# Protobuf generated files
+# Generated protobuf code
 *.pb.cc
 *.pb.h
 *.pb.go
 *.pb.rs
 *.pb.py
 
-# Large binary files
-*.tiff
-*.geotiff
-*.weights
-
-# Logs
+# Logs, temp & env files
 *.log
-
-# Misc
+apps_deploy/detector/logs/*.log
+baseline_comparison_SAHI/logs/*.log
 *.swp
 *.swo
-
-# Inference example images
-inference_examples/**
-inference_examples/
-
-# Gemini file
-Gemini.md
-
-# Environment Variables
+*.tmp
+*.bak
 .env
 
-# AI Exclude Rules
+# AI agent artifacts & local evaluation dumps
+Gemini.md
+evaluation_report.md
+Evaluation_Report.*
 .aiexclude
 .antigravityignore
 .agents/
 .codex/
-*.bin
-*.weights
-target/
-__pycache__/
 .aider*
 
-# YOLO training run weights
-apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run12/weights/
-apps_training/yolo_model_trainer/src/SAMDEF_ISR/Run14/weights/
+# Legacy example folders
+inference_examples/**
+inference_examples/
+
+# YOLO training weights
 apps_training/yolo_model_trainer/src/SAMDEF_ISR/*/weights/
-
-# SAHI benchmark results
-baseline_comparison_SAHI/results/
-

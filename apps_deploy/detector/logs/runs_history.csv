@@ -1,0 +1,5 @@
+run_id,timestamp_utc,tag,git_sha,model_file,batch_size,producer_parallelism,total_images,total_detections,wall_clock_s,mean_s_per_img,img_per_s,scenes_per_min,mean_gpu_util_pct,max_gpu_util_pct,peak_vram_mib
+run_20261111_230609_b4_p4_sweep,2026-11-11T17:36:09Z,sweep,0905ce0,run15_FP16.onnx,4,4,281,520180,50.52,0.1798,5.562,333.71,95.8,100.0,1349
+run_20261111_230709_b2_p4_b2,2026-11-11T17:37:09Z,b2,0905ce0,run15_FP16.onnx,2,4,281,520213,49.11,0.1748,5.722,343.34,94.6,99.0,790
+run_20261111_231205_b1_p4_cmp,2026-11-11T17:42:05Z,cmp,0905ce0,run15_FP16.onnx,1,4,281,520192,46.54,0.1656,6.037,362.24,95.4,99.0,519
+run_20261111_231816_b1_p4,2026-11-11T17:48:16Z,,0905ce0,run15_FP16.onnx,1,4,281,520192,46.17,0.1643,6.087,365.21,95.3,99.0,519

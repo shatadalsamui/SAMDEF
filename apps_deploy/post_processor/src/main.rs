@@ -14,13 +14,15 @@
 // 12: Railway               (Mint/Teal)
 // 13: Engineering-Machinery (Hot Pink)
 // 14: Tower-Pylon           (Lavender)
+mod config;
+
 use ab_glyph::FontRef;
 use anyhow::Result;
+use config::{is_result_json, parse_config, FinalOutput};
 use image::Rgb;
 use imageproc::drawing::draw_hollow_rect_mut;
 use imageproc::rect::Rect;
 use rayon::prelude::*;
-use serde::Deserialize;
 use std::fs::{self, File};
 use std::io::BufReader;
 use std::path::Path;
@@ -46,51 +48,26 @@ const NEON_COLORS: [Rgb<u8>; 15] = [
     Rgb([224, 64, 251]),  // 14: Tower-Pylon (Lavender)
 ];
 
-#[derive(Debug, Deserialize, Clone)]
-struct BBox {
-    x_min: f32,
-    y_min: f32,
-    x_max: f32,
-    y_max: f32,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-struct Detection {
-    bbox: BBox,
-    class_id: usize,
-    #[allow(dead_code)]
-    confidence: f32,
-}
-
-#[derive(Debug, Deserialize)]
-struct FinalOutput {
-    source_image: String,
-    detections: Vec<Detection>,
-}
-
 fn main() -> Result<()> {
     dotenv::dotenv().ok();
-
-    let json_dir = std::env::var("JSON_DIR").expect("JSON_DIR must be set in .env");
-    let output_dir = std::env::var("OUTPUT_DIR").expect("OUTPUT_DIR must be set in .env");
-
+    let cfg = parse_config();
     let font: Option<FontRef> = None;
 
-    fs::create_dir_all(&output_dir)?;
+    fs::create_dir_all(&cfg.output_dir)?;
 
-    let mut entries: Vec<_> = fs::read_dir(&json_dir)?
+    let mut entries: Vec<_> = fs::read_dir(&cfg.json_dir)?
         .filter_map(|e| e.ok())
         .map(|e| e.path())
-        .filter(|p| p.extension().map_or(false, |e| e == "json"))
+        .filter(|p| is_result_json(p))
         .collect();
 
     entries.sort();
 
-    println!(" Visualizer Running...");
+    println!(" Visualizer Running ({} result files, conf >= {:.2})...", entries.len(), cfg.conf_threshold);
     let start = Instant::now();
 
     entries.par_iter().for_each(|entry| {
-        if let Err(e) = process_map(entry, &font, &output_dir) {
+        if let Err(e) = process_map(entry, &font, &cfg.output_dir, cfg.conf_threshold) {
             eprintln!("Error processing {:?}: {}", entry, e);
         }
     });
@@ -101,7 +78,12 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn process_map(json_path: &Path, _font: &Option<FontRef>, output_dir: &str) -> Result<()> {
+fn process_map(
+    json_path: &Path,
+    _font: &Option<FontRef>,
+    output_dir: &str,
+    conf_threshold: f32,
+) -> Result<()> {
     let output: FinalOutput = serde_json::from_reader(BufReader::new(File::open(json_path)?))?;
     let detections = output.detections;
     let image_path = Path::new(&output.source_image);
@@ -120,7 +102,12 @@ fn process_map(json_path: &Path, _font: &Option<FontRef>, output_dir: &str) -> R
     let mut decoder = Decoder::new(file)?;
     let (width, height) = decoder.dimensions()?;
     let _color_type = decoder.colortype()?;
-    let _planar_config = decoder.get_tag(tiff::tags::Tag::PlanarConfiguration)?;
+    let is_planar = match decoder.get_tag(tiff::tags::Tag::PlanarConfiguration) {
+        Ok(tiff::decoder::ifd::Value::Unsigned(v)) => v == 2,
+        Ok(tiff::decoder::ifd::Value::Short(v)) => v == 2,
+        Ok(tiff::decoder::ifd::Value::UnsignedBig(v)) => v == 2,
+        _ => false,
+    };
     let chunk_count = if decoder.get_chunk_type() == tiff::decoder::ChunkType::Strip {
         decoder.strip_count()?
     } else {
@@ -143,7 +130,7 @@ fn process_map(json_path: &Path, _font: &Option<FontRef>, output_dir: &str) -> R
         }
     }
     let size = (width * height) as usize;
-    let mut image = if data.len() == size * 3 {
+    let mut image = if data.len() == size * 3 && is_planar {
         // Planar configuration: RRR...GGG...BBB... -> RGBRGB...
         let mut rgb_data = Vec::with_capacity(size * 3);
         for i in 0..size {
@@ -152,6 +139,8 @@ fn process_map(json_path: &Path, _font: &Option<FontRef>, output_dir: &str) -> R
             rgb_data.push(data[i + 2 * size]); // B
         }
         image::RgbImage::from_raw(width, height, rgb_data).unwrap()
+    } else if data.len() == size * 3 {
+        image::RgbImage::from_raw(width, height, data).unwrap()
     } else if data.len() == size {
         // Grayscale
         let rgb_data: Vec<u8> = data.into_iter().flat_map(|p| vec![p, p, p]).collect();
@@ -167,6 +156,9 @@ fn process_map(json_path: &Path, _font: &Option<FontRef>, output_dir: &str) -> R
     };
 
     for det in detections {
+        if det.confidence < conf_threshold {
+            continue;
+        }
         let mut x = det.bbox.x_min.round() as i32;
         let mut y = det.bbox.y_min.round() as i32;
         let mut w = (det.bbox.x_max - det.bbox.x_min).round() as u32;
