@@ -111,9 +111,33 @@ impl SamdefApp {
                             cx.listener(|this, _, _, cx| {
                                 this.viewer_state.is_measure_mode =
                                     !this.viewer_state.is_measure_mode;
+                                if this.viewer_state.is_measure_mode {
+                                    this.viewer_state.is_footprint_mode = false;
+                                }
                                 this.viewer_state.measure_start = None;
                                 this.viewer_state.measure_current = None;
                                 this.viewer_state.is_measure_pinned = false;
+                                cx.notify();
+                            }),
+                        ),
+                    )
+                    .child(
+                        toggle_btn(
+                            "btn-footprint",
+                            "Footprint [F]",
+                            self.viewer_state.is_footprint_mode,
+                            ACCENT_AMBER,
+                            0x3b2d0e,
+                            ACCENT_AMBER,
+                        )
+                        .on_mouse_down(
+                            MouseButton::Left,
+                            cx.listener(|this, _, _, cx| {
+                                this.viewer_state.is_footprint_mode =
+                                    !this.viewer_state.is_footprint_mode;
+                                if this.viewer_state.is_footprint_mode {
+                                    this.viewer_state.is_measure_mode = false;
+                                }
                                 cx.notify();
                             }),
                         ),

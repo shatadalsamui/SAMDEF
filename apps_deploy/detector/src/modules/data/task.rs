@@ -6,16 +6,6 @@ pub struct InferenceTask {
     pub global_offset_y: i32,
 }
 
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct FileMetadata {
-    pub source_path: String,
-    pub width: usize,
-    pub height: usize,
-    pub geo_transform: [f64; 6],
-    pub expected_tiles: usize,
-}
-
 #[derive(Debug)]
 pub enum PipelineMessage {
     Process(InferenceTask),

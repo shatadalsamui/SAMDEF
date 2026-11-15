@@ -5,7 +5,7 @@ use smallvec::SmallVec;
 use std::fs::File;
 use std::path::Path;
 use std::sync::Arc;
-use tiff::decoder::Decoder;
+use tiff::decoder::{Decoder, DecodingResult};
 use tiff::tags::Tag;
 
 #[derive(Clone)]
@@ -13,6 +13,33 @@ pub struct LoadedImage {
     pub width: u32,
     pub height: u32,
     pub render_image: Arc<RenderImage>,
+}
+
+fn bgra_to_loaded_image(width: u32, height: u32, bgra: Vec<u8>) -> Result<LoadedImage> {
+    let buffer: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::from_raw(width, height, bgra)
+        .ok_or_else(|| anyhow!("Failed to allocate BGRA ImageBuffer"))?;
+    let render_image = Arc::new(RenderImage::new(SmallVec::from_elem(Frame::new(buffer), 1)));
+    Ok(LoadedImage {
+        width,
+        height,
+        render_image,
+    })
+}
+
+fn append_tiff_chunk(dst: &mut Vec<u8>, chunk_data: DecodingResult, max_bytes: Option<usize>) -> Result<()> {
+    let limit = max_bytes.unwrap_or(usize::MAX);
+    match chunk_data {
+        DecodingResult::U8(chunk) => {
+            let take = chunk.len().min(limit);
+            dst.extend_from_slice(&chunk[..take]);
+        }
+        DecodingResult::U16(chunk) => {
+            let take = chunk.len().min(limit);
+            dst.extend(chunk[..take].iter().map(|&v| (v >> 8) as u8));
+        }
+        _ => return Err(anyhow!("Unsupported TIFF chunk format")),
+    }
+    Ok(())
 }
 
 /// Load a TIFF or image file and produce a GPUI-compatible `RenderImage` in BGRA format.
@@ -36,18 +63,7 @@ pub fn load_tiff_or_image<P: AsRef<Path>>(path: P) -> Result<LoadedImage> {
                 pixel.swap(0, 2);
             }
             let (w, h) = img.dimensions();
-            let raw_bytes = img.into_raw();
-            let buffer: ImageBuffer<Rgba<u8>, Vec<u8>> =
-                ImageBuffer::from_raw(w, h, raw_bytes)
-                    .ok_or_else(|| anyhow!("Failed to allocate image buffer for fallback"))?;
-            let render_image =
-                Arc::new(RenderImage::new(SmallVec::from_elem(Frame::new(buffer), 1)));
-
-            Ok(LoadedImage {
-                width: w,
-                height: h,
-                render_image,
-            })
+            bgra_to_loaded_image(w, h, img.into_raw())
         }
     }
 }
@@ -83,20 +99,8 @@ fn load_tiff_file(path: &Path) -> Result<LoadedImage> {
         for (p, plane) in planes.iter_mut().enumerate() {
             for s in 0..strips_per_plane {
                 let chunk_idx = (p * strips_per_plane + s) as u32;
-                let chunk_data = decoder.read_chunk(chunk_idx)?;
-                match chunk_data {
-                    tiff::decoder::DecodingResult::U8(chunk) => {
-                        let remaining = size.saturating_sub(plane.len());
-                        let to_take = chunk.len().min(remaining);
-                        plane.extend_from_slice(&chunk[..to_take]);
-                    }
-                    tiff::decoder::DecodingResult::U16(chunk) => {
-                        let remaining = size.saturating_sub(plane.len());
-                        let to_take = chunk.len().min(remaining);
-                        plane.extend(chunk[..to_take].iter().map(|&v| (v >> 8) as u8));
-                    }
-                    _ => return Err(anyhow!("Unsupported TIFF chunk format")),
-                }
+                let remaining = size.saturating_sub(plane.len());
+                append_tiff_chunk(plane, decoder.read_chunk(chunk_idx)?, Some(remaining))?;
             }
         }
 
@@ -114,30 +118,14 @@ fn load_tiff_file(path: &Path) -> Result<LoadedImage> {
                 bgra.push(255);        // A
             }
 
-            let buffer: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::from_raw(width, height, bgra)
-                .ok_or_else(|| anyhow!("Failed to allocate BGRA ImageBuffer"))?;
-            let render_image =
-                Arc::new(RenderImage::new(SmallVec::from_elem(Frame::new(buffer), 1)));
-
-            return Ok(LoadedImage {
-                width,
-                height,
-                render_image,
-            });
+            return bgra_to_loaded_image(width, height, bgra);
         }
     }
 
     // Case 2: Interleaved Chunky RGB or Grayscale
     let mut raw_bytes = Vec::with_capacity(size * 3);
     for i in 0..chunk_count {
-        let chunk_data = decoder.read_chunk(i)?;
-        match chunk_data {
-            tiff::decoder::DecodingResult::U8(chunk) => raw_bytes.extend_from_slice(&chunk),
-            tiff::decoder::DecodingResult::U16(chunk) => {
-                raw_bytes.extend(chunk.iter().map(|&v| (v >> 8) as u8));
-            }
-            _ => return Err(anyhow!("Unsupported TIFF chunk format")),
-        }
+        append_tiff_chunk(&mut raw_bytes, decoder.read_chunk(i)?, None)?;
     }
 
     let mut bgra = Vec::with_capacity(size * 4);
@@ -159,13 +147,5 @@ fn load_tiff_file(path: &Path) -> Result<LoadedImage> {
         return Err(anyhow!("Unexpected data length in TIFF: {}", raw_bytes.len()));
     }
 
-    let buffer: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::from_raw(width, height, bgra)
-        .ok_or_else(|| anyhow!("Failed to allocate BGRA ImageBuffer"))?;
-    let render_image = Arc::new(RenderImage::new(SmallVec::from_elem(Frame::new(buffer), 1)));
-
-    Ok(LoadedImage {
-        width,
-        height,
-        render_image,
-    })
+    bgra_to_loaded_image(width, height, bgra)
 }

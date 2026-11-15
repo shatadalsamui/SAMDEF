@@ -79,6 +79,61 @@ impl SamdefApp {
             return;
         }
 
+        if button == MouseButton::Right && self.viewer_state.is_footprint_mode {
+            if !self.viewer_state.footprint_points.is_empty() {
+                self.viewer_state.footprint_points.clear();
+                self.viewer_state.footprint_preview = None;
+                self.viewer_state.is_footprint_pinned = false;
+                cx.notify();
+            }
+            return;
+        }
+
+        if button == MouseButton::Left
+            && self.viewer_state.is_footprint_mode
+            && let Some(pt) = self
+                .viewer_state
+                .screen_to_pixel_clamped(ev.position, vp, orig_w, orig_h)
+        {
+            if self.viewer_state.is_footprint_pinned {
+                self.viewer_state.footprint_points = vec![pt];
+                self.viewer_state.footprint_preview = Some(pt);
+                self.viewer_state.is_footprint_pinned = false;
+            } else if ev.click_count >= 2 && self.viewer_state.footprint_points.len() >= 3 {
+                self.viewer_state.is_footprint_pinned = true;
+                self.viewer_state.footprint_preview = None;
+            } else {
+                let close_on_first = if self.viewer_state.footprint_points.len() >= 3 {
+                    let first = self.viewer_state.footprint_points[0];
+                    let (fx, fy) = self
+                        .viewer_state
+                        .pixel_to_screen(first.0, first.1, vp, orig_w, orig_h);
+                    let ex: f32 = ev.position.x.into();
+                    let ey: f32 = ev.position.y.into();
+                    (ex - fx).hypot(ey - fy) <= 8.0
+                } else {
+                    false
+                };
+
+                if close_on_first {
+                    self.viewer_state.is_footprint_pinned = true;
+                    self.viewer_state.footprint_preview = None;
+                } else {
+                    let is_dup = self
+                        .viewer_state
+                        .footprint_points
+                        .last()
+                        .is_some_and(|last| (pt.0 - last.0).hypot(pt.1 - last.1) <= 0.5);
+                    if !is_dup {
+                        self.viewer_state.footprint_points.push(pt);
+                    }
+                    self.viewer_state.footprint_preview = Some(pt);
+                }
+            }
+            cx.notify();
+            return;
+        }
+
         self.viewer_state.is_dragging = true;
         self.viewer_state.did_drag = false;
         self.viewer_state.drag_button = Some(button);
@@ -120,6 +175,17 @@ impl SamdefApp {
             && !self.viewer_state.is_measure_pinned
         {
             self.viewer_state.measure_current =
+                self.viewer_state
+                    .screen_to_pixel_clamped(ev.position, vp, orig_w, orig_h);
+            cx.notify();
+            return;
+        }
+
+        if self.viewer_state.is_footprint_mode
+            && !self.viewer_state.footprint_points.is_empty()
+            && !self.viewer_state.is_footprint_pinned
+        {
+            self.viewer_state.footprint_preview =
                 self.viewer_state
                     .screen_to_pixel_clamped(ev.position, vp, orig_w, orig_h);
             cx.notify();
@@ -247,6 +313,11 @@ impl SamdefApp {
                 self.viewer_state.is_measure_mode = false;
                 self.viewer_state.measure_start = None;
                 self.viewer_state.measure_current = None;
+                self.viewer_state.is_measure_pinned = false;
+                self.viewer_state.is_footprint_mode = false;
+                self.viewer_state.footprint_points.clear();
+                self.viewer_state.footprint_preview = None;
+                self.viewer_state.is_footprint_pinned = false;
                 self.viewer_state.selected_detection_id = None;
                 self.show_table_drawer = false;
             }
@@ -255,9 +326,35 @@ impl SamdefApp {
             "l" => self.viewer_state.show_labels = !self.viewer_state.show_labels,
             "m" => {
                 self.viewer_state.is_measure_mode = !self.viewer_state.is_measure_mode;
+                if self.viewer_state.is_measure_mode {
+                    self.viewer_state.is_footprint_mode = false;
+                }
                 self.viewer_state.measure_start = None;
                 self.viewer_state.measure_current = None;
                 self.viewer_state.is_measure_pinned = false;
+            }
+            "f" => {
+                self.viewer_state.is_footprint_mode = !self.viewer_state.is_footprint_mode;
+                if self.viewer_state.is_footprint_mode {
+                    self.viewer_state.is_measure_mode = false;
+                }
+            }
+            "enter" if self.viewer_state.is_footprint_mode
+                && !self.viewer_state.is_footprint_pinned
+                && self.viewer_state.footprint_points.len() >= 3 =>
+            {
+                self.viewer_state.is_footprint_pinned = true;
+                self.viewer_state.footprint_preview = None;
+            }
+            "backspace" if self.viewer_state.is_footprint_mode => {
+                if self.viewer_state.is_footprint_pinned {
+                    self.viewer_state.is_footprint_pinned = false;
+                } else {
+                    self.viewer_state.footprint_points.pop();
+                    if self.viewer_state.footprint_points.is_empty() {
+                        self.viewer_state.footprint_preview = None;
+                    }
+                }
             }
             "t" => self.show_table_drawer = !self.show_table_drawer,
             "g" => self.viewer_state.is_grayscale = !self.viewer_state.is_grayscale,

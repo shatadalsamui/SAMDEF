@@ -3,7 +3,7 @@ use crate::geo::{
     estimate_gsd_meters, format_dms, format_lat_lon, is_valid_geotransform, pixel_to_geo,
 };
 use crate::ui::theme::*;
-use crate::viewer::format_ruler_measurement;
+use crate::viewer::{format_footprint_measurement, format_ruler_measurement};
 use gpui::{div, prelude::*, px, rgb, IntoElement};
 
 impl SamdefApp {
@@ -37,6 +37,19 @@ impl SamdefApp {
                 self.viewer_state.measure_current,
             ) {
             Some(format_ruler_measurement(s, e, &self.geo_transform))
+        } else {
+            None
+        };
+
+        let footprint_text = if self.viewer_state.is_footprint_mode
+            && !self.viewer_state.footprint_points.is_empty()
+        {
+            let pts = self.viewer_state.active_footprint_points();
+            Some(format_footprint_measurement(
+                &pts,
+                self.viewer_state.is_footprint_pinned,
+                &self.geo_transform,
+            ))
         } else {
             None
         };
@@ -80,6 +93,14 @@ impl SamdefApp {
                             .bg(rgb(0x0e3b43))
                             .text_color(rgb(ACCENT_CYAN))
                             .child(format!("Ruler: {}", r))
+                    }))
+                    .children(footprint_text.map(|f| {
+                        div()
+                            .px_1p5()
+                            .rounded_xs()
+                            .bg(rgb(0x3b2d0e))
+                            .text_color(rgb(ACCENT_AMBER))
+                            .child(format!("Footprint: {}", f))
                     }))
                     .children(has_geo.then(|| {
                         div()

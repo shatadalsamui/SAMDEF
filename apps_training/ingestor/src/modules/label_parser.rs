@@ -18,7 +18,7 @@ impl Label {
 		if parts.len() != 4 {
 			return None;
 		}
-		let xmin = parts.get(0)?.trim().parse::<f64>().ok()? as u32;
+		let xmin = parts.first()?.trim().parse::<f64>().ok()? as u32;
 		let ymin = parts.get(1)?.trim().parse::<f64>().ok()? as u32;
 		let xmax = parts.get(2)?.trim().parse::<f64>().ok()? as u32;
 		let ymax = parts.get(3)?.trim().parse::<f64>().ok()? as u32;

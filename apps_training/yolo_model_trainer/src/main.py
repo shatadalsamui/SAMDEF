@@ -51,8 +51,8 @@ def main():
     parser = argparse.ArgumentParser(description="SAMDEF Brain Controller")
     parser.add_argument(
         "mode",
-        choices=["train", "run"],
-        help="Mode to run: 'train' for learning, 'run' for inference",
+        choices=["train"],
+        help="Mode to run: 'train' for learning",
     )
 
     if len(sys.argv) == 1:
@@ -73,10 +73,6 @@ def main():
         except Exception as e:
             print(f"\nCritical error: {e}")
             sys.exit(1)
-
-    elif args.mode == "run":
-        print("STARTING INFERENCE NODE")
-        print("Inference logic pending implementation.")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 use crate::geo::GeoTransform;
 use crate::io::LoadedImage;
 use crate::model::{class_hsla, DisplayDetection, CLASS_COUNT};
-use crate::viewer::overlays::{paint_badges_layer, paint_ruler_layers, BadgeItem};
+use crate::viewer::overlays::{paint_badges_layer, paint_footprint_layers, paint_ruler_layers, BadgeItem};
 use crate::viewer::state::ViewerState;
 use gpui::{
     fill, point, px, rgba, size, App, Background, BorderStyle, Bounds, Corners, Edges, PaintQuad,
@@ -164,6 +164,7 @@ pub fn paint_viewer(
 
     paint_badges_layer(window, cx, viewport, &badges);
     paint_ruler_layers(window, cx, viewport, orig_w, orig_h, geo_transform, state);
+    paint_footprint_layers(window, cx, viewport, orig_w, orig_h, geo_transform, state);
 }
 
 fn paint_corner_brackets(

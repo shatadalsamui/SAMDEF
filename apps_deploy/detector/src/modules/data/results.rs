@@ -3,7 +3,7 @@ use crate::modules::io::publisher::ZenohPublisher;
 use crate::modules::processing::post_processing::Detection;
 use anyhow::Result;
 use serde::Serialize;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Output struct for JSON serialization
 #[derive(Serialize)]
@@ -20,7 +20,7 @@ pub async fn save_resolved_scene(
     path_str: &str,
     geo_transform: [f64; 6],
     detections: Vec<Detection>,
-    output_dir: &PathBuf,
+    output_dir: &Path,
     publisher: &ZenohPublisher,
     width: usize,
     height: usize,

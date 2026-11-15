@@ -142,7 +142,7 @@ impl SamdefApp {
                     .child(div().w(px(90.0)).child("CONFIDENCE"))
                     .child(div().w(px(120.0)).child("PIXEL SIZE"))
                     .child(div().w(px(195.0)).child("GEOGRAPHIC (LON, LAT)"))
-                    .child(div().w(px(105.0)).child("FOOTPRINT"))
+                    .child(div().w(px(105.0)).child("BBOX AREA"))
                     .child(div().w(px(70.0)).text_right().child("FOCUS")),
             )
             .child(if total_matches == 0 {

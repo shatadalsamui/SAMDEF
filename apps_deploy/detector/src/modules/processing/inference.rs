@@ -131,7 +131,7 @@ impl GpuInferenceEngine {
         let needs_alloc = self
             .cuda_in
             .as_ref()
-            .map_or(true, |dev| *dev.shape() != *target_shape);
+            .is_none_or(|dev| *dev.shape() != *target_shape);
         if needs_alloc {
             let dims: Vec<usize> = target_shape.iter().map(|&d| d as usize).collect();
             let dev_in = Tensor::<f32>::new(cuda_alloc, dims)?;

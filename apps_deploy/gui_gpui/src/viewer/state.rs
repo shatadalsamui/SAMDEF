@@ -26,6 +26,11 @@ pub struct ViewerState {
     pub measure_current: Option<(f32, f32)>,
     pub is_measure_pinned: bool,
 
+    pub is_footprint_mode: bool,
+    pub footprint_points: Vec<(f32, f32)>,
+    pub footprint_preview: Option<(f32, f32)>,
+    pub is_footprint_pinned: bool,
+
     pub is_grayscale: bool,
     pub show_labels: bool,
     pub show_minimap: bool,
@@ -50,6 +55,10 @@ impl Default for ViewerState {
             measure_start: None,
             measure_current: None,
             is_measure_pinned: false,
+            is_footprint_mode: false,
+            footprint_points: Vec::new(),
+            footprint_preview: None,
+            is_footprint_pinned: false,
             is_grayscale: false,
             show_labels: true,
             show_minimap: true,
@@ -69,6 +78,23 @@ impl ViewerState {
         self.measure_start = None;
         self.measure_current = None;
         self.is_measure_pinned = false;
+        self.footprint_points.clear();
+        self.footprint_preview = None;
+        self.is_footprint_pinned = false;
+    }
+
+    /// Return placed polygon vertices plus live cursor preview vertex while drawing.
+    pub fn active_footprint_points(&self) -> Vec<(f32, f32)> {
+        let mut pts = self.footprint_points.clone();
+        if !self.is_footprint_pinned
+            && let Some(preview) = self.footprint_preview
+            && pts
+                .last()
+                .is_none_or(|last| (preview.0 - last.0).hypot(preview.1 - last.1) > 0.5)
+        {
+            pts.push(preview);
+        }
+        pts
     }
 
     #[inline]

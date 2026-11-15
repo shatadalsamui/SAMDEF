@@ -64,24 +64,6 @@ pub fn resolve_tiled_detections_in_pool(
     pool.install(|| resolve_tiled_detections(raw_dets, img_width, img_height, iou_threshold))
 }
 
-/// Legacy single-slice Spatial Grid NMS entry point upgraded to multi-cell indexing.
-#[allow(dead_code)]
-pub fn non_maximum_suppression(detections: &mut Vec<Detection>, iou_threshold: f32) {
-    if detections.is_empty() {
-        return;
-    }
-
-    let raw = std::mem::take(detections)
-        .into_iter()
-        .map(|d| RawDetection::from_detection(d, (0, 0), 0))
-        .collect::<Vec<_>>();
-
-    *detections = group_by_class(raw)
-        .into_par_iter()
-        .flat_map(|(_, class_dets)| run_hybrid_grid_nms(class_dets, iou_threshold))
-        .collect();
-}
-
 /// Parses the Raw Output from the ONNX Model
 /// Format: [Batch, 5000, 6] -> [x_min, y_min, x_max, y_max, confidence, class_id]
 pub fn parse_output(output: ArrayView2<f32>) -> Vec<Detection> {

@@ -32,7 +32,7 @@ pub fn prepare_labels(labels: &[Label]) -> Vec<ParsedLabel> {
                 45 | 49 | 51 | 52 => 4,
 
                 // 5: Fixed-Wing Aircraft (Fixed-wing, Small Aircraft, Passenger/Cargo Plane)
-                11 | 12 | 13 => 5,
+                11..=13 => 5,
 
                 // 6: Rotary-Wing Aircraft (Helicopter)
                 15 => 6,
@@ -53,7 +53,7 @@ pub fn prepare_labels(labels: &[Label]) -> Vec<ParsedLabel> {
                 79 => 11,
 
                 // 12: Railway Assets (Locomotive and all rail car variants)
-                33 | 34 | 35 | 36 | 37 | 38 => 12,
+                33..=38 => 12,
 
                 // 13: Engineering & Construction Machinery (Cranes, Excavators, Mixers, etc.)
                 32 | 53 | 54 | 55 | 56 | 57 | 59 | 60 | 61 | 62 | 63 | 64 | 65 | 66 => 13,

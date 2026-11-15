@@ -9,6 +9,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 pub struct RunStats {
     pub total_images: usize,
     pub total_detections: usize,
+    pub used_cpu_fallback: bool,
 }
 
 #[derive(Serialize)]
@@ -54,7 +55,11 @@ pub fn build_summary(
         .map_or(0, |d| d.as_secs());
 
     SamdefBenchmarkSummary {
-        framework: "SAMDEF (Rust + ort CUDA)",
+        framework: if stats.used_cpu_fallback {
+            "SAMDEF (Rust + ort CPU fallback)"
+        } else {
+            "SAMDEF (Rust + ort CUDA)"
+        },
         timestamp_unix_s,
         model_file,
         slice_size: format!("{}x{}", tile_size, tile_size),
@@ -90,13 +95,32 @@ mod tests {
             1152,
             1,
             4,
-            RunStats { total_images: 281, total_detections: 12000 },
+            RunStats {
+                total_images: 281,
+                total_detections: 12000,
+                used_cpu_fallback: false,
+            },
             46.294,
         );
+        assert_eq!(s.framework, "SAMDEF (Rust + ort CUDA)");
         assert_eq!(s.model_file, "run15_FP16.onnx");
         assert_eq!(s.total_wall_clock_seconds, 46.29);
         assert_eq!(s.total_images, 281);
         assert_eq!(s.total_detections, 12000);
+
+        let cpu_s = build_summary(
+            Path::new("/tmp/run15_FP16.onnx"),
+            1152,
+            1,
+            4,
+            RunStats {
+                total_images: 10,
+                total_detections: 42,
+                used_cpu_fallback: true,
+            },
+            12.0,
+        );
+        assert_eq!(cpu_s.framework, "SAMDEF (Rust + ort CPU fallback)");
     }
 }
 

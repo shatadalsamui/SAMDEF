@@ -163,7 +163,7 @@ impl SamdefApp {
                         )
                     }))
                     .children(has_geo.then(|| {
-                        kv_row("Footprint", format!("{:.1} m2", area_m2), ACCENT_CYAN)
+                        kv_row("BBox Area", format!("{:.1} m2", area_m2), ACCENT_CYAN)
                     }))
                     .children(has_geo.then(|| {
                         kv_row("Geo Center", format_lat_lon(cx_lon, cy_lat), TEXT_PRIMARY)

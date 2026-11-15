@@ -112,6 +112,84 @@ pub fn calculate_bearing_degrees(lon1: f64, lat1: f64, lon2: f64, lat2: f64) -> 
     (bearing_rad.to_degrees() + 360.0) % 360.0
 }
 
+/// Measured planar/geodesic area and perimeter for an arbitrary polygon.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PolygonMetrics {
+    pub area_sqm: f64,
+    pub perimeter_m: f64,
+    pub pixel_area: f64,
+    pub pixel_perimeter: f64,
+}
+
+/// Compute polygon area and perimeter in both pixel space and real-world meters (when georeferenced).
+pub fn calculate_polygon_metrics(points: &[(f32, f32)], gt: &GeoTransform) -> Option<PolygonMetrics> {
+    if points.len() < 3 {
+        return None;
+    }
+
+    let n = points.len();
+    let mut px_area_twice = 0.0_f64;
+    let mut px_perim = 0.0_f64;
+
+    for i in 0..n {
+        let (x1, y1) = (points[i].0 as f64, points[i].1 as f64);
+        let (x2, y2) = (points[(i + 1) % n].0 as f64, points[(i + 1) % n].1 as f64);
+        px_area_twice += x1 * y2 - x2 * y1;
+        px_perim += (x2 - x1).hypot(y2 - y1);
+    }
+    let pixel_area = px_area_twice.abs() * 0.5;
+
+    let (area_sqm, perimeter_m) = if is_valid_geotransform(gt) {
+        let geo_pts: Vec<(f64, f64)> = points
+            .iter()
+            .map(|&(px_x, px_y)| pixel_to_geo(gt, px_x as f64, px_y as f64))
+            .collect();
+
+        if gt[1].abs() > 1.0 {
+            // Projected meters (e.g. UTM)
+            let mut area_twice = 0.0_f64;
+            let mut perim = 0.0_f64;
+            for i in 0..n {
+                let (gx1, gy1) = geo_pts[i];
+                let (gx2, gy2) = geo_pts[(i + 1) % n];
+                area_twice += gx1 * gy2 - gx2 * gy1;
+                perim += (gx2 - gx1).hypot(gy2 - gy1);
+            }
+            (area_twice.abs() * 0.5, perim)
+        } else {
+            // WGS-84 geographic degrees: tangent-plane Shoelace around centroid + Haversine perimeter
+            const R: f64 = 6_371_000.0;
+            let inv_n = 1.0 / n as f64;
+            let lon0 = geo_pts.iter().map(|p| p.0).sum::<f64>() * inv_n;
+            let lat0 = geo_pts.iter().map(|p| p.1).sum::<f64>() * inv_n;
+            let cos_lat0 = lat0.to_radians().cos().abs().max(0.01);
+
+            let mut area_twice = 0.0_f64;
+            let mut perim = 0.0_f64;
+            for i in 0..n {
+                let (lon1, lat1) = geo_pts[i];
+                let (lon2, lat2) = geo_pts[(i + 1) % n];
+                let mx1 = (lon1 - lon0).to_radians() * R * cos_lat0;
+                let my1 = (lat1 - lat0).to_radians() * R;
+                let mx2 = (lon2 - lon0).to_radians() * R * cos_lat0;
+                let my2 = (lat2 - lat0).to_radians() * R;
+                area_twice += mx1 * my2 - mx2 * my1;
+                perim += haversine_distance_meters(lon1, lat1, lon2, lat2);
+            }
+            (area_twice.abs() * 0.5, perim)
+        }
+    } else {
+        (0.0, 0.0)
+    };
+
+    Some(PolygonMetrics {
+        area_sqm,
+        perimeter_m,
+        pixel_area,
+        pixel_perimeter: px_perim,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -148,5 +226,18 @@ mod tests {
 
         let bearing = calculate_bearing_degrees(0.0, 0.0, 0.0, 1.0);
         assert!((bearing - 0.0).abs() < 1e-4); // Due North
+    }
+
+    #[test]
+    fn test_polygon_metrics_rectangle() {
+        let gt: GeoTransform = [100.0, 1e-5, 0.0, 0.0, 0.0, -1e-5];
+        // ~111.2m x 55.6m rectangle in pixel space (100 x 50 px) at the equator
+        let poly = [(0.0_f32, 0.0_f32), (100.0, 0.0), (100.0, 50.0), (0.0, 50.0)];
+        let m = calculate_polygon_metrics(&poly, &gt).expect("polygon metrics");
+        assert!((m.pixel_area - 5000.0).abs() < 1e-3);
+        assert!((m.pixel_perimeter - 300.0).abs() < 1e-3);
+        assert!(m.area_sqm > 6000.0 && m.area_sqm < 6350.0);
+        assert!(m.perimeter_m > 330.0 && m.perimeter_m < 340.0);
+        assert!(calculate_polygon_metrics(&poly[..2], &gt).is_none());
     }
 }

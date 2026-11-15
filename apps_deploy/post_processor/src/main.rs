@@ -16,7 +16,6 @@
 // 14: Tower-Pylon           (Lavender)
 mod config;
 
-use ab_glyph::FontRef;
 use anyhow::Result;
 use config::{is_result_json, parse_config, FinalOutput};
 use image::Rgb;
@@ -51,7 +50,6 @@ const NEON_COLORS: [Rgb<u8>; 15] = [
 fn main() -> Result<()> {
     dotenv::dotenv().ok();
     let cfg = parse_config();
-    let font: Option<FontRef> = None;
 
     fs::create_dir_all(&cfg.output_dir)?;
 
@@ -67,7 +65,7 @@ fn main() -> Result<()> {
     let start = Instant::now();
 
     entries.par_iter().for_each(|entry| {
-        if let Err(e) = process_map(entry, &font, &cfg.output_dir, cfg.conf_threshold) {
+        if let Err(e) = process_map(entry, &cfg.output_dir, cfg.conf_threshold) {
             eprintln!("Error processing {:?}: {}", entry, e);
         }
     });
@@ -80,7 +78,6 @@ fn main() -> Result<()> {
 
 fn process_map(
     json_path: &Path,
-    _font: &Option<FontRef>,
     output_dir: &str,
     conf_threshold: f32,
 ) -> Result<()> {
@@ -98,10 +95,9 @@ fn process_map(
         .and_then(|s| s.to_str())
         .unwrap_or("unknown");
 
-    let file = File::open(&image_path)?;
+    let file = File::open(image_path)?;
     let mut decoder = Decoder::new(file)?;
     let (width, height) = decoder.dimensions()?;
-    let _color_type = decoder.colortype()?;
     let is_planar = match decoder.get_tag(tiff::tags::Tag::PlanarConfiguration) {
         Ok(tiff::decoder::ifd::Value::Unsigned(v)) => v == 2,
         Ok(tiff::decoder::ifd::Value::Short(v)) => v == 2,
@@ -143,7 +139,7 @@ fn process_map(
         image::RgbImage::from_raw(width, height, data).unwrap()
     } else if data.len() == size {
         // Grayscale
-        let rgb_data: Vec<u8> = data.into_iter().flat_map(|p| vec![p, p, p]).collect();
+        let rgb_data: Vec<u8> = data.into_iter().flat_map(|p| [p, p, p]).collect();
         image::RgbImage::from_raw(width, height, rgb_data).unwrap()
     } else {
         println!(

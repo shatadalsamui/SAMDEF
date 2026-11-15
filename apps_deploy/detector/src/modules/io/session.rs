@@ -9,28 +9,37 @@ use ort::{
 use std::path::Path;
 
 pub enum ExecutionProvider {
-    #[allow(dead_code)]
     Cpu,
     Cuda { device_id: i32 },
 }
 
 pub fn initialize_session(model_path: &Path, provider: ExecutionProvider) -> Result<Session> {
+    let intra_threads = match provider {
+        ExecutionProvider::Cpu => std::thread::available_parallelism()
+            .map(|n| (n.get() / 2).clamp(2, 8))
+            .unwrap_or(4),
+        ExecutionProvider::Cuda { .. } => 2,
+    };
+
     let builder_res = Session::builder().and_then(|builder| {
         let builder = builder
-            .with_intra_threads(2)?
+            .with_intra_threads(intra_threads)?
             .with_inter_threads(1)?
             .with_intra_op_spinning(false)?
             .with_inter_op_spinning(false)?;
 
         match provider {
             ExecutionProvider::Cpu => Ok(builder),
-            ExecutionProvider::Cuda { device_id } => Ok(builder.with_execution_providers([CUDA::default()
-                .with_device_id(device_id)
-                .with_tf32(true)
-                .with_conv_algorithm_search(ConvAlgorithmSearch::Exhaustive)
-                .with_arena_extend_strategy(ArenaExtendStrategy::SameAsRequested)
-                .with_cuda_graph(true)
-                .build()])?),
+            ExecutionProvider::Cuda { device_id } => Ok(builder.with_execution_providers([
+                CUDA::default()
+                    .with_device_id(device_id)
+                    .with_tf32(true)
+                    .with_conv_algorithm_search(ConvAlgorithmSearch::Exhaustive)
+                    .with_arena_extend_strategy(ArenaExtendStrategy::SameAsRequested)
+                    .with_cuda_graph(true)
+                    .build()
+                    .error_on_failure(),
+            ])?),
         }
     });
 
@@ -40,11 +49,25 @@ pub fn initialize_session(model_path: &Path, provider: ExecutionProvider) -> Res
 
     match session {
         Ok(session) => {
-            println!("Model Session Created (Check nvidia-smi for GPU usage)");
+            match provider {
+                ExecutionProvider::Cuda { device_id } => {
+                    println!("Model Session Created on CUDA:{} (Check nvidia-smi for GPU usage)", device_id);
+                }
+                ExecutionProvider::Cpu => {
+                    println!(
+                        "Model Session Created on CPU fallback ({} intra-op threads)",
+                        intra_threads
+                    );
+                }
+            }
             Ok(session)
         }
         Err(e) => {
-            eprintln!("Failed to create ONNX session: {:?}", e);
+            let provider_name = match provider {
+                ExecutionProvider::Cuda { device_id } => format!("CUDA:{}", device_id),
+                ExecutionProvider::Cpu => "CPU".to_string(),
+            };
+            eprintln!("Failed to create ONNX session ({}): {:?}", provider_name, e);
             Err(anyhow::Error::from(e))
         }
     }

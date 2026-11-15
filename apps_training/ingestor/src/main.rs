@@ -161,7 +161,7 @@ fn build_label_map(features: Vec<Label>) -> HashMap<String, Vec<Label>> {
             .and_then(|s| s.to_str())
             .unwrap_or(&label.properties.image_id)
             .to_string();
-        label_map.entry(key).or_insert_with(Vec::new).push(label);
+        label_map.entry(key).or_default().push(label);
     }
     label_map
 }

@@ -40,7 +40,7 @@ def run_training():
 
     print(f"Starting: {run_name}")
 
-    results = model.train(
+    model.train(
         data=data_yaml,
         epochs=100,
         imgsz=896,

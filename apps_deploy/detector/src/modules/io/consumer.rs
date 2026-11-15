@@ -1,5 +1,7 @@
 use crate::modules::data::benchmark::RunStats;
-use crate::modules::data::buffer_pool::{create_pinned_tensor_ring, PinAcquirer, TileBytePool};
+use crate::modules::data::buffer_pool::{
+    create_pinned_tensor_ring, PinAcquirer, PinRecycler, TileBytePool,
+};
 use crate::modules::data::results::save_resolved_scene;
 use crate::modules::data::task::{InferenceTask, PipelineMessage};
 use crate::modules::io::aggregator::{spawn_aggregator_worker, NmsWorkItem, PostMessage};
@@ -11,9 +13,13 @@ use crate::modules::processing::inference::GpuInferenceEngine;
 use crate::modules::processing::pre_processing::{create_preproc_pool, fill_batch_tensor};
 use anyhow::Result;
 use crossbeam::channel;
+use ort::memory::Allocator;
 use ort::value::Tensor;
-use std::path::PathBuf;
-use std::sync::Arc;
+use std::path::{Path, PathBuf};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 use std::thread;
 use tokio::sync::mpsc;
 use tokio::task::JoinSet;
@@ -22,6 +28,87 @@ struct GpuBatch {
     tensor: Tensor<f32>,
     tasks: Vec<InferenceTask>,
     valid_len: usize,
+}
+
+struct Stage2Runtime {
+    engine: GpuInferenceEngine,
+    recycler: PinRecycler,
+    using_cuda: bool,
+    ring_is_cuda_pinned: bool,
+}
+
+fn init_cpu_stage2_runtime(
+    model_path: &Path,
+    batch_size: usize,
+    ring_slots: usize,
+) -> Result<(PinAcquirer, Stage2Runtime)> {
+    let session = initialize_session(model_path, ExecutionProvider::Cpu)?;
+    let (acq, recycler) =
+        create_pinned_tensor_ring(&session, None, batch_size, ring_slots, TILE_SIZE)?;
+    let engine = GpuInferenceEngine::new(session, None, batch_size)?;
+    Ok((
+        acq,
+        Stage2Runtime {
+            engine,
+            recycler,
+            using_cuda: false,
+            ring_is_cuda_pinned: false,
+        },
+    ))
+}
+
+fn init_stage2_runtime(
+    model_path: &Path,
+    batch_size: usize,
+    ring_slots: usize,
+) -> Result<(PinAcquirer, Stage2Runtime)> {
+    // return init_cpu_stage2_runtime(model_path, batch_size, ring_slots);
+    const DEVICE_ID: i32 = 0;
+    let try_cuda = (|| -> Result<(PinAcquirer, Stage2Runtime)> {
+        let session = initialize_session(
+            model_path,
+            ExecutionProvider::Cuda {
+                device_id: DEVICE_ID,
+            },
+        )?;
+        let (acq, recycler) = create_pinned_tensor_ring(
+            &session,
+            Some(DEVICE_ID),
+            batch_size,
+            ring_slots,
+            TILE_SIZE,
+        )?;
+        let engine = GpuInferenceEngine::new(session, Some(DEVICE_ID), batch_size)?;
+        Ok((
+            acq,
+            Stage2Runtime {
+                engine,
+                recycler,
+                using_cuda: true,
+                ring_is_cuda_pinned: true,
+            },
+        ))
+    })();
+
+    match try_cuda {
+        Ok(ok) => Ok(ok),
+        Err(cuda_err) => {
+            eprintln!(
+                "Stage 2 CUDA init failed ({:#}); falling back automatically to CPU execution.",
+                cuda_err
+            );
+            init_cpu_stage2_runtime(model_path, batch_size, ring_slots)
+        }
+    }
+}
+
+fn copy_tensor_to_host(src: &Tensor<f32>) -> Result<Tensor<f32>> {
+    let (raw_shape, src_slice) = src.try_extract_tensor::<f32>()?;
+    let dims: Vec<usize> = raw_shape.iter().map(|&d| d as usize).collect();
+    let mut host_tensor = Tensor::<f32>::new(&Allocator::default(), dims)?;
+    let (_, dst_slice) = host_tensor.try_extract_tensor_mut::<f32>()?;
+    dst_slice.copy_from_slice(src_slice);
+    Ok(host_tensor)
 }
 
 fn dispatch_batch_to_gpu(
@@ -59,8 +146,9 @@ pub async fn run_consumer(
     tile_byte_pool: TileBytePool,
 ) -> Result<RunStats> {
     const GPU_QUEUE_CAP: usize = 6;
+    const RING_SLOTS: usize = GPU_QUEUE_CAP + 2;
 
-    // 5 isolated stages: Stage 1 Preproc -> Stage 2 GPU -> Stage 3 Aggregator -> Stage 4 NMS -> Stage 5 I/O.
+    // 5 isolated stages: Stage 1 Preproc -> Stage 2 GPU (auto CPU fallback) -> Stage 3 Aggregator -> Stage 4 NMS -> Stage 5 I/O.
     let (gpu_tx, gpu_rx) = channel::bounded::<Option<GpuBatch>>(GPU_QUEUE_CAP);
     let (pin_acq_tx, pin_acq_rx) = channel::bounded::<PinAcquirer>(1);
     let (post_tx, post_rx) = channel::bounded::<PostMessage>(128);
@@ -68,32 +156,48 @@ pub async fn run_consumer(
     let (save_tx, mut save_rx) = mpsc::channel::<ResolvedScene>(64);
 
     let post_tx_eof = post_tx.clone();
+    let used_cpu_fallback = Arc::new(AtomicBool::new(false));
+    let used_cpu_fallback_gpu = used_cpu_fallback.clone();
 
-    // Stage 2: Dedicated GPU thread owns Session and CUDA Graph buffers.
+    // Stage 2: Dedicated inference thread tries CUDA first and falls back automatically to CPU.
     let gpu_handle = thread::spawn(move || -> Result<()> {
-        const DEVICE_ID: i32 = 0;
-        let session = initialize_session(&model_path, ExecutionProvider::Cuda { device_id: DEVICE_ID })?;
-        let (pin_acquirer, pin_recycler) = create_pinned_tensor_ring(
-            &session,
-            Some(DEVICE_ID),
-            batch_size,
-            GPU_QUEUE_CAP + 2,
-            TILE_SIZE,
-        )?;
+        let (pin_acquirer, mut runtime) = init_stage2_runtime(&model_path, batch_size, RING_SLOTS)?;
+        if !runtime.using_cuda {
+            used_cpu_fallback_gpu.store(true, Ordering::Relaxed);
+        }
         let _ = pin_acq_tx.send(pin_acquirer);
 
-        let mut engine = GpuInferenceEngine::new(session, Some(DEVICE_ID), batch_size)?;
-
         while let Ok(Some(gpu_batch)) = gpu_rx.recv() {
-            let outputs = match engine.run_batch(&gpu_batch.tensor, gpu_batch.valid_len) {
-                Ok(out) => out,
-                Err(e) => {
-                    eprintln!("Stage 2 GPU inference error: {:?}", e);
-                    return Err(e);
+            let outputs = if runtime.using_cuda {
+                match runtime
+                    .engine
+                    .run_batch(&gpu_batch.tensor, gpu_batch.valid_len)
+                {
+                    Ok(out) => out,
+                    Err(gpu_err) => {
+                        eprintln!(
+                            "Stage 2 CUDA runtime error ({:#}); switching automatically to CPU fallback...",
+                            gpu_err
+                        );
+                        let host_copy = copy_tensor_to_host(&gpu_batch.tensor)?;
+                        drop(runtime.engine);
+                        let cpu_session = initialize_session(&model_path, ExecutionProvider::Cpu)?;
+                        runtime.engine = GpuInferenceEngine::new(cpu_session, None, batch_size)?;
+                        runtime.using_cuda = false;
+                        used_cpu_fallback_gpu.store(true, Ordering::Relaxed);
+                        runtime.engine.run_batch(&host_copy, gpu_batch.valid_len)?
+                    }
                 }
+            } else if runtime.ring_is_cuda_pinned {
+                let host_copy = copy_tensor_to_host(&gpu_batch.tensor)?;
+                runtime.engine.run_batch(&host_copy, gpu_batch.valid_len)?
+            } else {
+                runtime
+                    .engine
+                    .run_batch(&gpu_batch.tensor, gpu_batch.valid_len)?
             };
-            // Immediately recycle pinned tensor so Stage 2 never drops/unmaps large host buffers
-            pin_recycler.recycle(gpu_batch.tensor);
+
+            runtime.recycler.recycle(gpu_batch.tensor);
             let _ = post_tx.send(PostMessage::InferenceResult {
                 outputs,
                 tasks: gpu_batch.tasks,
@@ -195,16 +299,38 @@ pub async fn run_consumer(
         });
     }
 
-    while let Some(_) = save_tasks.join_next().await {}
+    while save_tasks.join_next().await.is_some() {}
 
-    if let Ok(Err(e)) = preprocessor_handle.join() {
+    if let Ok(Err(e)) = gpu_handle.join() {
         return Err(e);
     }
-    if let Ok(Err(e)) = gpu_handle.join() {
+    if let Ok(Err(e)) = preprocessor_handle.join() {
         return Err(e);
     }
     let _ = aggregator_handle.join();
     let _ = nms_handle.join();
 
+    stats.used_cpu_fallback = used_cpu_fallback.load(Ordering::Relaxed);
     Ok(stats)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn copy_tensor_to_host_preserves_shape_and_values() {
+        let mut src = Tensor::<f32>::new(&Allocator::default(), [1usize, 3, 2, 2]).unwrap();
+        {
+            let (_, data) = src.try_extract_tensor_mut::<f32>().unwrap();
+            for (idx, slot) in data.iter_mut().enumerate() {
+                *slot = idx as f32 * 0.25;
+            }
+        }
+        let dst = copy_tensor_to_host(&src).unwrap();
+        let (src_shape, src_data) = src.try_extract_tensor::<f32>().unwrap();
+        let (dst_shape, dst_data) = dst.try_extract_tensor::<f32>().unwrap();
+        assert_eq!(src_shape, dst_shape);
+        assert_eq!(src_data, dst_data);
+    }
 }

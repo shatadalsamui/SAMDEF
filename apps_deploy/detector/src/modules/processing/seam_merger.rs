@@ -200,7 +200,7 @@ fn merge_axis_pass(mut items: Vec<RawDetection>, axis: SeamAxis) -> (Vec<RawDete
                 continue;
             }
             if let Some((score, merged)) = try_merge_along_axis(&items[i], &items[j], axis) {
-                if best.as_ref().map_or(true, |(_, bs, _)| score > *bs) {
+                if best.as_ref().is_none_or(|(_, bs, _)| score > *bs) {
                     best = Some((j, score, merged));
                 }
             }

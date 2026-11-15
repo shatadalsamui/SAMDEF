@@ -17,7 +17,7 @@ pub fn run_producer(
     let mut entries: Vec<_> = fs::read_dir(input_dir)?
         .filter_map(|e| e.ok())
         .map(|e| e.path())
-        .filter(|p| p.extension().map_or(false, |e| e == "tif" || e == "tiff"))
+        .filter(|p| p.extension().is_some_and(|e| e == "tif" || e == "tiff"))
         .collect();
 
     entries.sort();
