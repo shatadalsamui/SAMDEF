@@ -20,8 +20,6 @@ Machine-readable index of verified file paths for local AI models and coding age
 - `docs/architecture/gui_gpui.md` — GPUI GIS Viewer architecture.
 - `docs/architecture/ingestor_training.md` — Ingestor & training flow.
 - `docs/architecture/model_trainer.md` — YOLO training architecture.
-- `docs/drawingscript.md` — Shell script to draw boxes on imagery.
-- `docs/extras.md` — Developer cargo check helper script.
 
 ### apps_deploy/detector/ (Inference Pipeline)
 - `apps_deploy/detector/README.md` — Detector architecture, 5-stage pipeline, `run_detector.sh`, and SAHI baseline comparison.
@@ -118,10 +116,6 @@ Machine-readable index of verified file paths for local AI models and coding age
 - `apps_deploy/post_processor/.env.example` — Configuration template (JSON_DIR, OUTPUT_DIR).
 - `apps_deploy/post_processor/src/config.rs` — CLI/env config & GeoTIFF discovery supporting SAMDEF and SAHI JSON schemas.
 - `apps_deploy/post_processor/src/main.rs` — Draws hollow boxes on GeoTIFFs and saves PNGs.
-
-### apps_training/image_simulator/
-- `apps_training/image_simulator/make_rectangle.py` — Stitched rectangle stress-test GeoTIFF generator.
-- `apps_training/image_simulator/make_square.py` — Stitched square stress-test GeoTIFF generator.
 
 ### apps_training/ingestor/
 - `apps_training/ingestor/Cargo.toml` — Crate manifest (GDAL, rayon, turbojpeg).
