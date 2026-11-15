@@ -1,6 +1,7 @@
 use crate::app::{ActiveInput, SamdefApp};
+use crate::ui::scrollbar::render_vertical_scrollbar;
 use crate::ui::theme::*;
-use gpui::{div, prelude::*, px, rgb, Context, IntoElement, MouseButton};
+use gpui::{div, prelude::*, px, rgb, Context, IntoElement, MouseButton, Point};
 
 impl SamdefApp {
     pub fn render_file_nav(&self, cx: &Context<Self>) -> impl IntoElement {
@@ -124,6 +125,7 @@ impl SamdefApp {
                             MouseButton::Left,
                             cx.listener(|this, _, _, cx| {
                                 this.file_filter_query.clear();
+                                this.file_scroll_handle.set_offset(Point::default());
                                 cx.notify();
                             }),
                         )
@@ -185,55 +187,87 @@ impl SamdefApp {
                     ),
             )
             .children(self.file_dropdown_open.then(|| {
+                let list_h = if total_matches == 0 {
+                    28.0
+                } else {
+                    (total_matches as f32 * 24.0).min(184.0)
+                };
+
                 div()
-                    .id("file-selector-list")
-                    .max_h(px(184.0))
-                    .overflow_y_scroll()
+                    .w_full()
+                    .h(px(list_h + 2.0))
                     .rounded_sm()
                     .bg(rgb(BG_INPUT))
                     .border_1()
                     .border_color(rgb(ACCENT_BLUE))
+                    .overflow_hidden()
                     .flex()
-                    .flex_col()
-                    .children(if filtered_files.is_empty() {
-                        vec![div()
-                            .id("file-item-empty")
-                            .px_2p5()
-                            .py_1p5()
-                            .text_xs()
-                            .text_color(rgb(TEXT_DIM))
-                            .child("No matching files")]
-                    } else {
-                        filtered_files
-                            .into_iter()
-                            .map(|(idx, name)| {
-                                let is_active = self.current_file_idx == Some(idx);
-                                div()
-                                    .id(("file-item", idx))
+                    .flex_row()
+                    .child(
+                        div()
+                            .id("file-selector-list")
+                            .flex_1()
+                            .h(px(list_h))
+                            .overflow_y_scroll()
+                            .track_scroll(&self.file_scroll_handle)
+                            .flex()
+                            .flex_col()
+                            .children(if filtered_files.is_empty() {
+                                vec![div()
+                                    .id("file-item-empty")
+                                    .h(px(28.0))
                                     .px_2p5()
-                                    .py_1()
-                                    .border_b_1()
-                                    .border_color(rgb(BORDER_SUBTLE))
-                                    .bg(rgb(if is_active { 0x1e293b } else { BG_INPUT }))
-                                    .hover(|s| s.bg(rgb(BG_HOVER)).cursor_pointer())
+                                    .flex()
+                                    .items_center()
                                     .text_xs()
-                                    .text_color(rgb(if is_active {
-                                        ACCENT_BLUE
-                                    } else {
-                                        TEXT_PRIMARY
-                                    }))
-                                    .on_mouse_down(
-                                        MouseButton::Left,
-                                        cx.listener(move |this, _, _, cx| {
-                                            this.file_dropdown_open = false;
-                                            this.active_input = None;
-                                            this.load_file_at_index(idx, cx);
-                                        }),
-                                    )
-                                    .child(name)
-                            })
-                            .collect()
-                    })
+                                    .text_color(rgb(TEXT_DIM))
+                                    .child("No matching files")]
+                            } else {
+                                filtered_files
+                                    .into_iter()
+                                    .map(|(idx, name)| {
+                                        let is_active = self.current_file_idx == Some(idx);
+                                        div()
+                                            .id(("file-item", idx))
+                                            .h(px(24.0))
+                                            .px_2p5()
+                                            .flex()
+                                            .items_center()
+                                            .border_b_1()
+                                            .border_color(rgb(BORDER_SUBTLE))
+                                            .bg(rgb(if is_active { 0x1e293b } else { BG_INPUT }))
+                                            .hover(|s| s.bg(rgb(BG_HOVER)).cursor_pointer())
+                                            .text_xs()
+                                            .text_color(rgb(if is_active {
+                                                ACCENT_BLUE
+                                            } else {
+                                                TEXT_PRIMARY
+                                            }))
+                                            .on_mouse_down(
+                                                MouseButton::Left,
+                                                cx.listener(move |this, _, _, cx| {
+                                                    this.file_dropdown_open = false;
+                                                    this.active_input = None;
+                                                    this.load_file_at_index(idx, cx);
+                                                }),
+                                            )
+                                            .child(name)
+                                    })
+                                    .collect()
+                            }),
+                    )
+                    .children((total_matches > 0).then(|| {
+                        render_vertical_scrollbar(
+                            "file-scroll",
+                            self.file_scroll_handle.clone(),
+                            self.file_scrollbar_bounds.clone(),
+                            list_h,
+                            total_matches as f32 * 24.0,
+                            24.0 * 3.0,
+                            ACCENT_BLUE,
+                            cx,
+                        )
+                    }))
             }))
             // 4. Prev / Next Stepper + Status Counts
             .child(

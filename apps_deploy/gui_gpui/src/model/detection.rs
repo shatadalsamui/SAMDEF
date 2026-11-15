@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use serde::{Deserialize, Serialize};
 use crate::geo::{estimate_gsd_meters, pixel_to_geo, GeoTransform};
 
@@ -9,28 +8,6 @@ pub struct BBoxCoords {
     pub y_min: f32,
     pub x_max: f32,
     pub y_max: f32,
-}
-
-impl BBoxCoords {
-    pub fn width(&self) -> f32 {
-        (self.x_max - self.x_min).max(0.0)
-    }
-
-    pub fn height(&self) -> f32 {
-        (self.y_max - self.y_min).max(0.0)
-    }
-
-    pub fn center(&self) -> (f32, f32) {
-        ((self.x_min + self.x_max) / 2.0, (self.y_min + self.y_max) / 2.0)
-    }
-
-    pub fn area(&self) -> f32 {
-        self.width() * self.height()
-    }
-
-    pub fn contains_point(&self, px: f32, py: f32) -> bool {
-        px >= self.x_min && px <= self.x_max && py >= self.y_min && py <= self.y_max
-    }
 }
 
 /// Raw detection format deserialized from detector's `*_results.json`
@@ -81,10 +58,6 @@ impl DisplayDetection {
         self.width() * self.height()
     }
 
-    pub fn contains_point(&self, px: f32, py: f32) -> bool {
-        px >= self.x_min && px <= self.x_max && py >= self.y_min && py <= self.y_max
-    }
-
     /// Calculate geographic center (Lon, Lat) from GeoTransform
     pub fn geo_center(&self, gt: &GeoTransform) -> (f64, f64) {
         let (cx, cy) = self.center();
@@ -129,10 +102,6 @@ mod tests {
         let det = &output.detections[0];
         assert_eq!(det.class_id, 2);
         assert!((det.confidence - 0.88).abs() < 1e-4);
-        assert_eq!(det.bbox.width(), 50.0);
-        assert_eq!(det.bbox.height(), 50.0);
-        assert_eq!(det.bbox.area(), 2500.0);
-        assert_eq!(det.bbox.center(), (125.0, 225.0));
 
         let display = DisplayDetection {
             id: 1,
@@ -144,8 +113,10 @@ mod tests {
             confidence: det.confidence,
         };
 
-        assert!(display.contains_point(120.0, 220.0));
-        assert!(!display.contains_point(50.0, 50.0));
+        assert_eq!(display.width(), 50.0);
+        assert_eq!(display.height(), 50.0);
+        assert_eq!(display.area(), 2500.0);
+        assert_eq!(display.center(), (125.0, 225.0));
 
         let (lon, lat) = display.geo_center(&output.geo_transform);
         assert!(lon > 100.0);

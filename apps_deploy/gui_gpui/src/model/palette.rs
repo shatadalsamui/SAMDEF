@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use gpui::{rgb, Hsla, Rgba};
 
 pub const CLASS_COUNT: usize = 15;
@@ -40,30 +39,8 @@ pub const CLASS_NAMES: [&str; CLASS_COUNT] = [
     "Tower Pylon",
 ];
 
-pub const CLASS_HEX: [&str; CLASS_COUNT] = [
-    "#00E5FF",
-    "#39FF14",
-    "#00FF88",
-    "#2979FF",
-    "#651FFF",
-    "#FFFF00",
-    "#FF6D00",
-    "#FF1744",
-    "#FF5252",
-    "#D500F9",
-    "#FFD600",
-    "#FF9100",
-    "#00BFA5",
-    "#F50057",
-    "#E040FB",
-];
-
 pub fn class_name(class_id: usize) -> &'static str {
     CLASS_NAMES.get(class_id).copied().unwrap_or("Unknown Target")
-}
-
-pub fn class_hex(class_id: usize) -> &'static str {
-    CLASS_HEX.get(class_id).copied().unwrap_or("#FFFFFF")
 }
 
 pub fn class_rgb(class_id: usize) -> [u8; 3] {

@@ -1,5 +1,6 @@
 pub mod inspector;
 pub mod minimap;
+pub mod scrollbar;
 pub mod sidebar;
 pub mod status_bar;
 pub mod table_drawer;

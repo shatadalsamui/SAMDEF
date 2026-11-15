@@ -1,17 +1,15 @@
-#![allow(dead_code)]
 use anyhow::{anyhow, Result};
 use gpui::RenderImage;
 use image::{Frame, ImageBuffer, Rgba};
 use smallvec::SmallVec;
 use std::fs::File;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Arc;
 use tiff::decoder::Decoder;
 use tiff::tags::Tag;
 
 #[derive(Clone)]
 pub struct LoadedImage {
-    pub path: PathBuf,
     pub width: u32,
     pub height: u32,
     pub render_image: Arc<RenderImage>,
@@ -46,7 +44,6 @@ pub fn load_tiff_or_image<P: AsRef<Path>>(path: P) -> Result<LoadedImage> {
                 Arc::new(RenderImage::new(SmallVec::from_elem(Frame::new(buffer), 1)));
 
             Ok(LoadedImage {
-                path: path_ref.to_path_buf(),
                 width: w,
                 height: h,
                 render_image,
@@ -123,7 +120,6 @@ fn load_tiff_file(path: &Path) -> Result<LoadedImage> {
                 Arc::new(RenderImage::new(SmallVec::from_elem(Frame::new(buffer), 1)));
 
             return Ok(LoadedImage {
-                path: path.to_path_buf(),
                 width,
                 height,
                 render_image,
@@ -168,7 +164,6 @@ fn load_tiff_file(path: &Path) -> Result<LoadedImage> {
     let render_image = Arc::new(RenderImage::new(SmallVec::from_elem(Frame::new(buffer), 1)));
 
     Ok(LoadedImage {
-        path: path.to_path_buf(),
         width,
         height,
         render_image,

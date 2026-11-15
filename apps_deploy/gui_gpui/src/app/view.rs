@@ -5,6 +5,10 @@ use gpui::{canvas, div, prelude::*, rgb, Context, MouseButton, Render, Window};
 
 impl Render for SamdefApp {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if self.show_table_drawer {
+            self.sync_table_filter_cache();
+        }
+
         let titlebar = self.render_titlebar(window, cx);
         let resize_strips = Self::render_resize_strips(window);
         let sidebar = self.render_sidebar(cx);

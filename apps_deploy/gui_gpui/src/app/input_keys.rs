@@ -1,5 +1,5 @@
 use crate::app::{ActiveInput, SamdefApp};
-use gpui::{Context, KeystrokeEvent};
+use gpui::{Context, KeystrokeEvent, Point};
 
 impl SamdefApp {
     /// Jump to and load the first file matching `self.file_filter_query` (mirrors `gui_iced`)
@@ -67,6 +67,7 @@ impl SamdefApp {
                 }
                 if target == ActiveInput::FileSearch {
                     self.file_dropdown_open = true;
+                    self.file_scroll_handle.set_offset(Point::default());
                 }
                 cx.notify();
                 return true;
@@ -77,6 +78,7 @@ impl SamdefApp {
                     self.input_buffer_mut(target).push_str(&clean);
                     if target == ActiveInput::FileSearch {
                         self.file_dropdown_open = true;
+                        self.file_scroll_handle.set_offset(Point::default());
                     }
                     cx.notify();
                 }
@@ -84,6 +86,9 @@ impl SamdefApp {
             }
             "u" if mods.control => {
                 self.input_buffer_mut(target).clear();
+                if target == ActiveInput::FileSearch {
+                    self.file_scroll_handle.set_offset(Point::default());
+                }
                 cx.notify();
                 return true;
             }
@@ -99,6 +104,7 @@ impl SamdefApp {
             self.input_buffer_mut(target).push_str(ch);
             if target == ActiveInput::FileSearch {
                 self.file_dropdown_open = true;
+                self.file_scroll_handle.set_offset(Point::default());
             }
             cx.notify();
             return true;

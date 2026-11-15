@@ -80,7 +80,9 @@ Machine-readable index of verified file paths for local AI models and coding age
 - `apps_deploy/gui_gpui/README.md` — User manual, hotkeys, and SRP module layout.
 - `apps_deploy/gui_gpui/src/main.rs` — Entry point (maximized CSD GPUI window & keystroke observer).
 - `apps_deploy/gui_gpui/src/geo.rs` — GDAL 6-param affine transform, DMS formatter & Haversine geodesy.
-- `apps_deploy/gui_gpui/src/app/mod.rs` — SamdefApp state, async GeoTIFF/JSON loader & navigation.
+- `apps_deploy/gui_gpui/src/app/mod.rs` — App module exports (`SamdefApp`, `ActiveInput`, `TableFilterKey`).
+- `apps_deploy/gui_gpui/src/app/state.rs` — `SamdefApp` state, async GeoTIFF/JSON loader & navigation.
+- `apps_deploy/gui_gpui/src/app/table_filter.rs` — Snapshot-keyed table filter cache & zero-alloc matching.
 - `apps_deploy/gui_gpui/src/app/events.rs` — Smooth scroll zoom, drag/click disambiguation & map hotkeys.
 - `apps_deploy/gui_gpui/src/app/input_keys.rs` — Focusable text input editing, clipboard paste & file search.
 - `apps_deploy/gui_gpui/src/app/view.rs` — Root Render tree & live viewport bounds capture.
@@ -93,13 +95,15 @@ Machine-readable index of verified file paths for local AI models and coding age
 - `apps_deploy/gui_gpui/src/model/palette.rs` — 15 neon class colors & RGBA/HSLA helpers.
 - `apps_deploy/gui_gpui/src/ui/mod.rs` — UI component module exports.
 - `apps_deploy/gui_gpui/src/ui/theme.rs` — Dark GIS color tokens & reusable button/input primitives.
+- `apps_deploy/gui_gpui/src/ui/scrollbar.rs` — Reusable vertical scrollbar (`^` / `v` step buttons + draggable track).
 - `apps_deploy/gui_gpui/src/ui/titlebar.rs` — Client-side window titlebar (Move/Min/Max/F11/Close) & resize strips.
 - `apps_deploy/gui_gpui/src/ui/toolbar.rs` — Top bar (Fit, 1:1, Zoom, Ruler, B/W, Radar, Table).
 - `apps_deploy/gui_gpui/src/ui/status_bar.rs` — Bottom QGIS-style live Lat/Lon, DMS, Pixel & GSD bar.
 - `apps_deploy/gui_gpui/src/ui/minimap.rs` — Interactive radar thumbnail, neon target blips & cyan frustum.
 - `apps_deploy/gui_gpui/src/ui/inspector.rs` — Occluded hover/pinned target inspection HUD card.
 - `apps_deploy/gui_gpui/src/ui/table_drawer.rs` — Occluded bottom detection table drawer & live search filter.
-- `apps_deploy/gui_gpui/src/ui/sidebar/mod.rs` — Scrollable left sidebar container & header.
+- `apps_deploy/gui_gpui/src/ui/sidebar/mod.rs` — Sidebar submodule exports.
+- `apps_deploy/gui_gpui/src/ui/sidebar/panel.rs` — Scrollable left sidebar container & header.
 - `apps_deploy/gui_gpui/src/ui/sidebar/file_nav.rs` — Editable dir scanner, instant file search & dropdown picker.
 - `apps_deploy/gui_gpui/src/ui/sidebar/class_panel.rs` — 15-class visibility toggles, counts & toggleable Solo.
 - `apps_deploy/gui_gpui/src/ui/sidebar/confidence_panel.rs` — Interactive drag/click confidence slider & ASCII steppers.

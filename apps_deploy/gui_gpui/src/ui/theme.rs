@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use gpui::{div, prelude::*, rgb, CursorStyle, Div, ElementId, SharedString, Stateful};
 
 // Zed / VS Code inspired high-contrast dark theme
@@ -7,7 +6,6 @@ pub const BG_SIDEBAR: u32 = 0x121215;
 pub const BG_CARD: u32 = 0x18181c;
 pub const BG_INPUT: u32 = 0x202026;
 pub const BG_HOVER: u32 = 0x27272f;
-pub const BG_ACTIVE: u32 = 0x1e3a8a;
 
 pub const BORDER_SUBTLE: u32 = 0x27272a;
 pub const BORDER_STRONG: u32 = 0x3f3f46;
@@ -19,7 +17,6 @@ pub const TEXT_DIM: u32 = 0x71717a;
 pub const ACCENT_BLUE: u32 = 0x3b82f6;
 pub const ACCENT_GREEN: u32 = 0x10b981;
 pub const ACCENT_AMBER: u32 = 0xf59e0b;
-pub const ACCENT_RED: u32 = 0xef4444;
 pub const ACCENT_CYAN: u32 = 0x06b6d4;
 
 /// Reusable compact interactive card button

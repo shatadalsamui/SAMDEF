@@ -1,42 +1,17 @@
 use crate::app::{ActiveInput, SamdefApp};
-use crate::geo::is_valid_geotransform;
+use crate::geo::{estimate_gsd_meters, is_valid_geotransform, GeoTransform};
 use crate::io::{export_csv, export_geojson};
-use crate::model::{class_name, class_rgb, DisplayDetection, CLASS_COUNT};
+use crate::model::{class_name, class_rgb, DisplayDetection};
+use crate::ui::scrollbar::render_vertical_scrollbar;
 use crate::ui::theme::*;
-use gpui::{div, prelude::*, px, rgb, Context, IntoElement, MouseButton};
+use gpui::{div, prelude::*, px, rgb, uniform_list, Context, IntoElement, MouseButton};
 use std::path::PathBuf;
 
 impl SamdefApp {
+    /// Render the bottom detection table drawer using `uniform_list` virtualization
+    /// so only visible rows in the 182 px viewport are constructed each frame.
     pub fn render_table_drawer(&self, cx: &Context<Self>) -> impl IntoElement {
-        let has_geo = is_valid_geotransform(&self.geo_transform);
-        let search_lower = self.table_search_query.trim().to_lowercase();
-
-        let visible_dets: Vec<DisplayDetection> = self
-            .detections
-            .iter()
-            .filter(|d| {
-                if d.class_id >= CLASS_COUNT
-                    || !self.class_visible[d.class_id]
-                    || d.confidence < self.confidence_threshold
-                {
-                    return false;
-                }
-                if !search_lower.is_empty() {
-                    let name = class_name(d.class_id).to_lowercase();
-                    if !name.contains(&search_lower)
-                        && !format!("{}", d.id).contains(&search_lower)
-                    {
-                        return false;
-                    }
-                }
-                true
-            })
-            .copied()
-            .collect();
-
-        let total_matches = visible_dets.len();
-        let selected_id = self.viewer_state.selected_detection_id;
-        let gt = self.geo_transform;
+        let total_matches = self.table_filtered_indices.len();
 
         div()
             .id("table-drawer-panel")
@@ -170,96 +145,154 @@ impl SamdefApp {
                     .child(div().w(px(105.0)).child("FOOTPRINT"))
                     .child(div().w(px(70.0)).text_right().child("FOCUS")),
             )
-            .child(
+            .child(if total_matches == 0 {
                 div()
-                    .id("table-body-scroll")
+                    .h(px(182.0))
+                    .w_full()
                     .flex()
-                    .flex_col()
-                    .overflow_y_scroll()
-                    .flex_1()
-                    .children(visible_dets.into_iter().map(|d| {
-                        let is_sel = selected_id == Some(d.id);
-                        let [r, g, b] = class_rgb(d.class_id);
-                        let hex_color = ((r as u32) << 16) | ((g as u32) << 8) | (b as u32);
-                        let (lon, lat) = d.geo_center(&gt);
-                        let area = d.ground_area_sqm(&gt);
+                    .items_center()
+                    .justify_center()
+                    .text_xs()
+                    .text_color(rgb(TEXT_DIM))
+                    .child("No matching detections")
+                    .into_any_element()
+            } else {
+                let table_scroll = self.table_scroll_handle.0.borrow().base_handle.clone();
+                div()
+                    .h(px(182.0))
+                    .w_full()
+                    .flex()
+                    .flex_row()
+                    .child(
+                        uniform_list(
+                            "table-body-uniform-list",
+                            total_matches,
+                            cx.processor(|this, range: std::ops::Range<usize>, _window, cx| {
+                                let gt = this.geo_transform;
+                                let has_geo = is_valid_geotransform(&gt);
+                                let gsd_sq = if has_geo {
+                                    let gsd = estimate_gsd_meters(&gt);
+                                    gsd * gsd
+                                } else {
+                                    1.0
+                                };
+                                let selected_id = this.viewer_state.selected_detection_id;
+                                let mut rows = Vec::with_capacity(range.len());
 
-                        div()
-                            .id(("row-det", d.id))
-                            .flex()
-                            .flex_row()
-                            .items_center()
-                            .h(px(26.0))
-                            .px_4()
-                            .border_b_1()
-                            .border_color(rgb(BORDER_SUBTLE))
-                            .bg(rgb(if is_sel { 0x1e293b } else { BG_SIDEBAR }))
-                            .hover(|s| s.bg(rgb(BG_HOVER)).cursor_pointer())
-                            .text_xs()
-                            .on_mouse_down(
-                                MouseButton::Left,
-                                cx.listener(move |this, _, _, cx| {
-                                    let (orig_w, orig_h) = this.image_dims();
-                                    this.viewer_state.focus_on_detection(
-                                        &d,
-                                        this.vp_bounds(),
-                                        orig_w,
-                                        orig_h,
-                                    );
-                                    cx.notify();
-                                }),
-                            )
-                            .child(div().w(px(60.0)).text_color(rgb(TEXT_DIM)).child(format!("#{}", d.id)))
-                            .child(
-                                div()
-                                    .w(px(160.0))
-                                    .flex()
-                                    .flex_row()
-                                    .items_center()
-                                    .gap_2()
-                                    .child(div().size_2p5().rounded_full().bg(rgb(hex_color)))
-                                    .child(div().text_color(rgb(TEXT_PRIMARY)).child(class_name(d.class_id))),
-                            )
-                            .child(
-                                div()
-                                    .w(px(90.0))
-                                    .text_color(rgb(ACCENT_GREEN))
-                                    .child(format!("{:.1}%", d.confidence * 100.0)),
-                            )
-                            .child(
-                                div()
-                                    .w(px(120.0))
-                                    .text_color(rgb(TEXT_SECONDARY))
-                                    .child(format!("{:.0}x{:.0} px", d.width(), d.height())),
-                            )
-                            .child(
-                                div()
-                                    .w(px(195.0))
-                                    .text_color(rgb(TEXT_SECONDARY))
-                                    .child(if has_geo {
-                                        format!("{:.5}, {:.5}", lon, lat)
-                                    } else {
-                                        "N/A".to_string()
-                                    }),
-                            )
-                            .child(
-                                div()
-                                    .w(px(105.0))
-                                    .text_color(rgb(ACCENT_CYAN))
-                                    .child(if has_geo {
-                                        format!("{:.1} m2", area)
-                                    } else {
-                                        format!("{:.0} px2", d.area())
-                                    }),
-                            )
-                            .child(
-                                div()
-                                    .w(px(70.0))
-                                    .text_right()
-                                    .text_color(rgb(ACCENT_BLUE))
-                                    .child("Focus ->"),
-                            )
-                    })),
-            )
+                                for row_idx in range {
+                                    if let Some(&det_idx) = this.table_filtered_indices.get(row_idx)
+                                        && let Some(&d) = this.detections.get(det_idx)
+                                    {
+                                        let is_sel = selected_id == Some(d.id);
+                                        rows.push(render_table_row(
+                                            d, is_sel, has_geo, &gt, gsd_sq, cx,
+                                        ));
+                                    }
+                                }
+                                rows
+                            }),
+                        )
+                        .track_scroll(self.table_scroll_handle.clone())
+                        .flex_1()
+                        .h(px(182.0)),
+                    )
+                    .child(render_vertical_scrollbar(
+                        "tbl-scroll",
+                        table_scroll,
+                        self.table_scrollbar_bounds.clone(),
+                        182.0,
+                        total_matches as f32 * 26.0,
+                        26.0 * 4.0,
+                        ACCENT_GREEN,
+                        cx,
+                    ))
+                    .into_any_element()
+            })
     }
+}
+
+fn render_table_row(
+    d: DisplayDetection,
+    is_sel: bool,
+    has_geo: bool,
+    gt: &GeoTransform,
+    gsd_sq: f64,
+    cx: &Context<SamdefApp>,
+) -> impl IntoElement + use<> {
+    let [r, g, b] = class_rgb(d.class_id);
+    let hex_color = ((r as u32) << 16) | ((g as u32) << 8) | (b as u32);
+    let (lon, lat) = if has_geo { d.geo_center(gt) } else { (0.0, 0.0) };
+    let area = (d.area() as f64) * gsd_sq;
+
+    div()
+        .id(("row-det", d.id))
+        .flex()
+        .flex_row()
+        .items_center()
+        .h(px(26.0))
+        .px_4()
+        .border_b_1()
+        .border_color(rgb(BORDER_SUBTLE))
+        .bg(rgb(if is_sel { 0x1e293b } else { BG_SIDEBAR }))
+        .hover(|s| s.bg(rgb(BG_HOVER)).cursor_pointer())
+        .text_xs()
+        .on_mouse_down(
+            MouseButton::Left,
+            cx.listener(move |this, _, _, cx| {
+                let (orig_w, orig_h) = this.image_dims();
+                this.viewer_state
+                    .focus_on_detection(&d, this.vp_bounds(), orig_w, orig_h);
+                cx.notify();
+            }),
+        )
+        .child(div().w(px(60.0)).text_color(rgb(TEXT_DIM)).child(format!("#{}", d.id)))
+        .child(
+            div()
+                .w(px(160.0))
+                .flex()
+                .flex_row()
+                .items_center()
+                .gap_2()
+                .child(div().size_2p5().rounded_full().bg(rgb(hex_color)))
+                .child(div().text_color(rgb(TEXT_PRIMARY)).child(class_name(d.class_id))),
+        )
+        .child(
+            div()
+                .w(px(90.0))
+                .text_color(rgb(ACCENT_GREEN))
+                .child(format!("{:.1}%", d.confidence * 100.0)),
+        )
+        .child(
+            div()
+                .w(px(120.0))
+                .text_color(rgb(TEXT_SECONDARY))
+                .child(format!("{:.0}x{:.0} px", d.width(), d.height())),
+        )
+        .child(
+            div()
+                .w(px(195.0))
+                .text_color(rgb(TEXT_SECONDARY))
+                .child(if has_geo {
+                    format!("{:.5}, {:.5}", lon, lat)
+                } else {
+                    "N/A".to_string()
+                }),
+        )
+        .child(
+            div()
+                .w(px(105.0))
+                .text_color(rgb(ACCENT_CYAN))
+                .child(if has_geo {
+                    format!("{:.1} m2", area)
+                } else {
+                    format!("{:.0} px2", d.area())
+                }),
+        )
+        .child(
+            div()
+                .w(px(70.0))
+                .text_right()
+                .text_color(rgb(ACCENT_BLUE))
+                .child("Focus ->"),
+        )
 }

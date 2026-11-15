@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 //! Geographic transformation and geodesy utilities for SAMDEF GIS Viewer.
 //! Supports GDAL 6-parameter affine geotransforms and coordinate projections.
 
@@ -20,6 +19,7 @@ pub fn pixel_to_geo(gt: &GeoTransform, px: f64, py: f64) -> (f64, f64) {
 }
 
 /// Convert Geographic coordinates (Lon/Easting, Lat/Northing) back to image pixel coordinates
+#[cfg(test)]
 #[inline]
 pub fn geo_to_pixel(gt: &GeoTransform, geo_x: f64, geo_y: f64) -> Option<(f64, f64)> {
     let det = gt[1] * gt[5] - gt[2] * gt[4];
